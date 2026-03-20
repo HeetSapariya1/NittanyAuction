@@ -31,7 +31,7 @@ CREATE TABLE Bidders (
     last_name CHAR(255),
     age INTEGER,
     home_address_id CHAR(255),
-    major CHAR(255)
+    major CHAR(255),
     FOREIGN KEY (email) REFERENCES Users(email)
 );
 
@@ -45,7 +45,7 @@ CREATE TABLE Sellers (
 
 CREATE TABLE Helpdesk (
     email CHAR(255) PRIMARY KEY,
-    Position CHAR(255),
+    position CHAR(255),
     FOREIGN KEY (email) REFERENCES Users(email)
 );
 
