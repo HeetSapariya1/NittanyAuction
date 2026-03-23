@@ -71,6 +71,11 @@ body {
     margin-bottom: 10px;
 }
 
+.overlay h1 {
+    color: black;
+    margin-bottom: 10px;
+}
+
 .overlay button:hover {
     background: #123a7c;
     box-shadow: 0 0 10px rgba(255,255,255,0.5);

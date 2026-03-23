@@ -45,7 +45,7 @@ def login():
         return redirect(url_for("helpdesk_dashboard"))
 
     conn.close()
-    return "<h1>Logged in, but no role found.</h1>"
+    return redirect(url_for("temporary_dashboard"))
 
 
 @app.route("/bidder")
@@ -67,6 +67,9 @@ def helpdesk_dashboard():
 def register():
     return render_template("register.html")
 
+@app.route("/temporary-dashboard")
+def temporary_dashboard():
+    return render_template("temp-dashboard.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
