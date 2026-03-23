@@ -79,3 +79,15 @@ body {
 .overlay input:hover {
     box-shadow: 0 0 10px rgba(255,255,255,0.5);
 }
+
+.error-message {
+    width: 400px;
+    padding: 12px;
+    background: rgba(255, 0, 0, 0.15);
+    border: 1px solid rgba(255, 0, 0, 0.4);
+    color: white;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 15px;
+    box-sizing: border-box;
+}

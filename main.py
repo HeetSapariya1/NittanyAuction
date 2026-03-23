@@ -1,66 +1,72 @@
-from flask import flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
-import hashlib
+import os
 
 app = Flask(__name__)
 
-def hash_password(password):
-    return hashlib.sha256(str(password).encode('utf-8')).hexdigest()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(BASE_DIR, "database_population/nittany_auction.db")
 
-
-@app.route('/', methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
 def login():
-    if request.method == 'GET':
-        return render_template('login.html')
+    if request.method == "GET":
+        return render_template("login.html")
 
-    if request.method == 'POST':
-        email = request.form.get('email').strip()
-        pw = request.form.get('password')
-        hashed_pw = hash_password(pw)
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
 
-        conn = sqlite3.connect('nittany_auction.db')
-        cursor = conn.cursor()
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
 
-        # Authenticate
-        cursor.execute("SELECT * FROM Users WHERE email = ? AND password = ?", (email, hashed_pwd))
-        if not cursor.fetchone():
-            conn.close()
-            return "<h1>Login Failed: Invalid credentials</h1>"  # Simple error handling
+    cursor.execute(
+        "SELECT * FROM Users WHERE email = ? AND password = ?",
+        (email, password)
+    )
+    user = cursor.fetchone()
 
-        # Role Routing
-        cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
-        if cursor.fetchone():
-            conn.close()
-            return redirect(url_for('buyer_dashboard'))
-
-        cursor.execute("SELECT email FROM Sellers WHERE email = ?", (email,))
-        if cursor.fetchone():
-            conn.close()
-            return redirect(url_for('seller_dashboard'))
-
-        cursor.execute("SELECT email FROM Helpdesk WHERE email = ?", (email,))
-        if cursor.fetchone():
-            conn.close()
-            return redirect(url_for('helpdesk_dashboard'))
-
+    if user is None:
         conn.close()
-        return "<h1>Logged in, but no role found.</h1>"
+        return render_template("login.html", error="Invalid email or password")
+
+    cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return redirect(url_for("bidder_dashboard"))
+
+    cursor.execute("SELECT email FROM Sellers WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return redirect(url_for("seller_dashboard"))
+
+    cursor.execute("SELECT email FROM Helpdesk WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return redirect(url_for("helpdesk_dashboard"))
+
+    conn.close()
+    return "<h1>Logged in, but no role found.</h1>"
 
 
-@app.route('/bidder')
+@app.route("/bidder")
 def bidder_dashboard():
-    return render_template("")
+    return "<h1>Bidder Dashboard</h1>"
 
 
-@app.route('/seller')
+@app.route("/seller")
 def seller_dashboard():
-    return render_template("")
+    return "<h1>Seller Dashboard</h1>"
 
 
-@app.route('/helpdesk')
+@app.route("/helpdesk")
 def helpdesk_dashboard():
-    return render_template("")
+    return "<h1>Helpdesk Dashboard</h1>"
 
 
-if __name__ == '__main__':
+@app.route("/register")
+def register():
+    return render_template("register.html")
+
+
+if __name__ == "__main__":
     app.run(debug=True)
