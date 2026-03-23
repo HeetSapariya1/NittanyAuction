@@ -93,7 +93,7 @@ with open("dataset/Helpdesk.csv", "r", encoding="utf-8-sig") as file:
                 (email, position)
             )
         else:
-            print("Skipped Helpdesk row, email not in Users:", email)
+            print("email not in Users  ", email)
 
 with open("dataset/Local_Vendors.csv", "r", encoding="utf-8-sig") as file:
     reader = csv.reader(file)
@@ -106,4 +106,4 @@ with open("dataset/Local_Vendors.csv", "r", encoding="utf-8-sig") as file:
 conn.commit()
 
 conn.close()
-print("\nDatabase is completely scrubbed, populated, and ready for Flask!")
+print("\nDatabase ready")
