@@ -62,3 +62,38 @@ CREATE TABLE Local_Vendors (
 
 
 
+-------
+
+CREATE TABLE Bidders (
+    email CHAR(255) PRIMARY KEY,
+    first_name CHAR(255),
+    last_name CHAR(255),
+    age INTEGER,
+    home_address_id CHAR(255),
+    major CHAR(255),
+    FOREIGN KEY (email) REFERENCES Users(email)
+);
+
+CREATE TABLE Sellers (
+    email CHAR(255) PRIMARY KEY,
+    bank_routing_number CHAR(255),
+    bank_account_number CHAR(255),
+    balance INTEGER,
+    FOREIGN KEY (email) REFERENCES Users(email)
+);
+
+CREATE TABLE Helpdesk (
+    email CHAR(255) PRIMARY KEY,
+    position CHAR(255),
+    FOREIGN KEY (email) REFERENCES Users(email)
+);
+
+CREATE TABLE Local_Vendors (
+    Email CHAR(255) PRIMARY KEY,
+    Business_Name CHAR(255),
+    Business_Address_ID CHAR(255),
+    Customer_Service_Phone_Number CHAR(255),
+    FOREIGN KEY (Email) REFERENCES Users(email)
+);
+    
+
