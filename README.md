@@ -3,6 +3,12 @@ Nittany Auction codebase
 
 This website is created for the Nittany Auction. The user interface allows users to log in using registered information in the database to access the auction website. 
 
+Authors:
+Colin Lombardi
+Sankeerth Mahesh
+Heet Sapariya
+Justin Huang
+
 Features:
 
 - A main login page that uses bootstrap that securely collects user login information with error handling in the event of invalid login details.
