@@ -18,18 +18,18 @@ Organization:
 
 The project is divided into 4 parts.
 
-README which illustrates the background and process of the project.
-The main.py which is the Python script that uses Flask and SQlite for routing, and checkdb.py, which populates the database.
-Templates folder which includes all the HTML files that handle the front-end of the website.
-Creation of the schema which currently handles everything in regards to user login. 
+- README which illustrates the background and process of the project.
+- The main.py which is the Python script that uses Flask and SQlite for routing, and checkdb.py, which populates the database.
+- Templates folder which includes all the HTML files that handle the front-end of the website.
+- Creation of the schema which currently handles everything in regards to user login. 
 
 Instructions:
 
-Download the files, it should be all in one folder and in your IDE of choice open the project/folder.
-Make sure Python, Flask and everything else is installed.
-Locate checkdb.py and run it, this will populate the database. After the data has been populated, you will need to locate main.py and then run it as well.
-In the console, you should see a URL, click on that, and the website should pop up. In our case its http://127.0.0.1:5000
-You should be able to try out the functions of the website
+1. Download the files, it should be all in one folder and in your IDE of choice open the project/folder.
+2. Make sure Python, Flask and everything else is installed.
+3. Locate checkdb.py and run it, this will populate the database. After the data has been populated, you will need to locate main.py and then run it as well.
+4. In the console, you should see a URL, click on that, and the website should pop up. In our case its http://127.0.0.1:5000
+5. You should be able to try out the functions of the website
 
 
 Phase 2 Checkpoint 1: 
