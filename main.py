@@ -6,7 +6,7 @@ import hashlib  # 1. Added the hashlib library
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-db_path = os.path.join(BASE_DIR, "nittany_auction.db")
+db_path = os.path.join(BASE_DIR, "database_population/nittany_auction.db")
 
 def hash_password(plain: str) -> str:
     return hashlib.sha256(str(plain).encode()).hexdigest()
@@ -63,17 +63,17 @@ def login():
 
 @app.route("/bidder")
 def bidder_dashboard():
-    return "<h1>Bidder Dashboard</h1>"
+    return render_template("temp-dashboard.html")
 
 
 @app.route("/seller")
 def seller_dashboard():
-    return "<h1>Seller Dashboard</h1>"
+    return render_template("seller.html")
 
 
 @app.route("/helpdesk")
 def helpdesk_dashboard():
-    return "<h1>Helpdesk Dashboard</h1>"
+    return render_template("helpdesk.html")
 
 
 @app.route("/register")

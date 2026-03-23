@@ -7,15 +7,43 @@ def hash_password(plain: str) -> str:
 
 # 1. Connected to the correct folder
 conn = sqlite3.connect("nittany_auction.db")
-#conn.execute("PRAGMA foreign_keys = ON")
+conn.execute("PRAGMA foreign_keys = ON")
 
 with open("schema.sql", "r", encoding="utf-8") as f:
     conn.executescript(f.read())
 
 cur = conn.cursor()
 
+# ---------- 0. ZIPCODE_INFO ----------
+with open("dataset/Zipcode_Info.csv", "r", encoding="utf-8-sig") as file:
+    reader = csv.reader(file)
+    next(reader)
+    for row in reader:
+        cleaned_row = [item.strip() for item in row]
+        cur.execute(
+            "INSERT INTO Zipcode_Info (zipcode, city, state_name) VALUES (?, ?, ?)",
+            cleaned_row
+        )
+
+# ---------- 0.5 ADDRESS ----------
+with open("dataset/Address.csv", "r", encoding="utf-8-sig") as file:
+    reader = csv.reader(file)
+    next(reader)
+    for row in reader:
+        cleaned_row = [item.strip() for item in row]
+
+        address_id = cleaned_row[0] if cleaned_row[0] != "" else None
+        zipcode = cleaned_row[1]
+        street_num = cleaned_row[2]
+        street_name = cleaned_row[3]
+
+        cur.execute(
+            "INSERT INTO Address (address_id, zipcode, street_num, street_name) VALUES (?, ?, ?, ?)",
+            (address_id, zipcode, street_num, street_name)
+        )
+
 # ---------- 1. USERS ----------
-with open("Users.csv", "r", encoding="utf-8-sig") as file:
+with open("dataset/Users.csv", "r", encoding="utf-8-sig") as file:
     reader = csv.reader(file)
     next(reader)
     for row in reader:
@@ -25,15 +53,28 @@ with open("Users.csv", "r", encoding="utf-8-sig") as file:
         cur.execute("INSERT INTO Users (email, password) VALUES (?, ?)", (email, hashed_pw))
 
 # ---------- 2. BIDDERS ----------
-with open("Bidders.csv", "r", encoding="utf-8-sig") as file:
+with open("dataset/Bidders.csv", "r", encoding="utf-8-sig") as file:
     reader = csv.reader(file)
     next(reader)
     for row in reader:
         cleaned_row = [item.strip() for item in row]
-        cur.execute("INSERT INTO Bidders (email, first_name, last_name, age, home_address_id, major) VALUES (?, ?, ?, ?, ?, ?)", cleaned_row)
+
+        email = cleaned_row[0]
+        first_name = cleaned_row[1]
+        last_name = cleaned_row[2]
+        age = int(cleaned_row[3]) if cleaned_row[3] != "" else None
+        home_address_id = cleaned_row[4] if cleaned_row[4] != "" else None
+        major = cleaned_row[5] if cleaned_row[5] != "" else None
+        phone_number = None
+
+        cur.execute("""
+            INSERT INTO Bidders
+            (email, first_name, last_name, age, phone_number, major, home_address_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (email, first_name, last_name, age, phone_number, major, home_address_id))
 
 # ---------- 3. SELLERS ----------
-with open("Sellers.csv", "r", encoding="utf-8-sig") as file:
+with open("dataset/Sellers.csv", "r", encoding="utf-8-sig") as file:
     reader = csv.reader(file)
     next(reader)
     for row in reader:
@@ -41,15 +82,26 @@ with open("Sellers.csv", "r", encoding="utf-8-sig") as file:
         cur.execute("INSERT INTO Sellers (email, bank_routing_number, bank_account_number, balance) VALUES (?, ?, ?, ?)", cleaned_row)
 
 # ---------- 4. HELPDESK ----------
-with open("Helpdesk.csv", "r", encoding="utf-8-sig") as file:
+with open("dataset/Helpdesk.csv", "r", encoding="utf-8-sig") as file:
     reader = csv.reader(file)
     next(reader)
     for row in reader:
         cleaned_row = [item.strip() for item in row]
-        cur.execute("INSERT INTO Helpdesk (email, position) VALUES (?, ?)", cleaned_row)
+
+        email = cleaned_row[0]
+        position = cleaned_row[1]
+
+        cur.execute("SELECT 1 FROM Users WHERE email = ?", (email,))
+        if cur.fetchone():
+            cur.execute(
+                "INSERT INTO Helpdesk (email, position) VALUES (?, ?)",
+                (email, position)
+            )
+        else:
+            print("Skipped Helpdesk row, email not in Users:", email)
 
 # ---------- 5. Local_Vendors ----------
-with open("Local_Vendors.csv", "r", encoding="utf-8-sig") as file:
+with open("dataset/Local_Vendors.csv", "r", encoding="utf-8-sig") as file:
     reader = csv.reader(file)
     next(reader)
     for row in reader:

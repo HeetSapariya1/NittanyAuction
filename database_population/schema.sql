@@ -1,6 +1,6 @@
 PRAGMA foreign_keys = ON;
 
--- DROP TABLES (clean reset)
+-- DROP TABLES
 DROP TABLE IF EXISTS Local_Vendors;
 DROP TABLE IF EXISTS Sellers;
 DROP TABLE IF EXISTS Helpdesk;
@@ -18,7 +18,7 @@ CREATE TABLE Zipcode_Info (
 
 -- ADDRESS
 CREATE TABLE Address (
-    address_id INTEGER PRIMARY KEY,
+    address_id TEXT PRIMARY KEY,
     zipcode TEXT NOT NULL,
     street_num TEXT NOT NULL,
     street_name TEXT NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE Bidders (
     age INTEGER,
     phone_number TEXT,
     major TEXT,
-    home_address_id INTEGER,
+    home_address_id TEXT,
     FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE,
     FOREIGN KEY (home_address_id) REFERENCES Address(address_id)
 );
@@ -47,10 +47,7 @@ CREATE TABLE Bidders (
 -- HELPDESK
 CREATE TABLE Helpdesk (
     email TEXT PRIMARY KEY,
-    staff_id TEXT UNIQUE NOT NULL,
-    staff_name TEXT NOT NULL,
     position TEXT,
-    hired_date TEXT,
     FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE
 );
 
@@ -67,9 +64,8 @@ CREATE TABLE Sellers (
 CREATE TABLE Local_Vendors (
     email TEXT PRIMARY KEY,
     business_name TEXT NOT NULL,
-    ein TEXT UNIQUE NOT NULL,
-    customer_service_phone TEXT,
-    business_address_id INTEGER,
+    business_address_id TEXT,
+    customer_service_phone_number TEXT,
     FOREIGN KEY (email) REFERENCES Sellers(email) ON DELETE CASCADE,
     FOREIGN KEY (business_address_id) REFERENCES Address(address_id)
 );
