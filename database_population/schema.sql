@@ -19,11 +19,7 @@ CREATE TABLE Address (
 -- 2. Base User Table (HelpDesk, Bidders, and Sellers are part of Users)
 CREATE TABLE Users (
     email CHAR(255) PRIMARY KEY,
-    staff_id CHAR(50) UNIQUE NOT NULL, -- staff id is unique to helpdesk users
-    staff_name CHAR(255) NOT NULL, 
-    position CHAR(100),
-    hired_date DATE, 
-    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE -- if an email is removed from helpdesk, cascade delete for all users
+    password char(255) NOT NULL
 );
 
 -- 4. Bidders 
@@ -35,35 +31,41 @@ CREATE TABLE Bidders (
     phone_number CHAR(255), 
     major CHAR(255),
     home_address_id INTEGER,
-    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE, -- if an email is removed from bidders, cascade delete for all users
+    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE, -- if a user is removed, delete it from bidders
     FOREIGN KEY (home_address_id) REFERENCES Address(address_ID) -- many-to-one relationship, such that several bidders can have the same address. This also maintains data integrity and rejects bidders without valid addresses.
 );
 
--- 5. Sellers 
+-- 5. Helpdesk
+CREATE TABLE Helpdesk (
+    email CHAR(255) PRIMARY KEY,
+    staff_id CHAR(50) UNIQUE NOT NULL,
+    staff_name CHAR(255) NOT NULL,
+    position CHAR(255),
+    hired_date DATE,
+    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE -- if a user is removed, delete it from HelpDesk
+);
+
+-- 6. Sellers 
 CREATE TABLE Sellers (
     email CHAR(255) PRIMARY KEY,
     bank_routing_number CHAR(255) NOT NULL,
     bank_account_number CHAR(255) NOT NULL,
     balance DECIMAL(10, 2) DEFAULT 0.00,
-    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE -- if an email is removed from Sellers, cascade delete for all users
+    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE -- if a user is removed, delete it from Sellers
 );
 
--- 6. Local Vendors (weak entity relationship with Sellers)
+-- 7. Local Vendors (weak entity relationship with Sellers)
 CREATE TABLE Local_Vendors (
     email CHAR(255) PRIMARY KEY,
     business_name CHAR(255) NOT NULL,
     ein CHAR(255) UNIQUE NOT NULL,      -- unique identifiier for local vendors
     customer_service_phone CHAR(255),
     business_address_id INTEGER,
-    FOREIGN KEY (email) REFERENCES Sellers(email) ON DELETE CASCADE, -- if an email is removed from local_vendors, cascade delete for all sellers
+    FOREIGN KEY (email) REFERENCES Sellers(email) ON DELETE CASCADE, -- if a user is removed from Sellers, delete it from local_vendors
     FOREIGN KEY (business_address_id) REFERENCES Address(address_ID) -- many-to-one relationship, such that several local vendors can have the same address.
 );
 
-
-
-
--------
-
+---- 
 CREATE TABLE Bidders (
     email CHAR(255) PRIMARY KEY,
     first_name CHAR(255),
