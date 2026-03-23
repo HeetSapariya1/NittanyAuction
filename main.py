@@ -37,6 +37,11 @@ def login():
         conn.close()
         return render_template("login.html", error="Invalid email or password")
 
+    cursor.execute("SELECT email FROM Helpdesk WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return redirect(url_for("helpdesk_dashboard"))
+
     cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
     if cursor.fetchone():
         conn.close()
@@ -46,11 +51,6 @@ def login():
     if cursor.fetchone():
         conn.close()
         return redirect(url_for("seller_dashboard"))
-
-    cursor.execute("SELECT email FROM Helpdesk WHERE email = ?", (email,))
-    if cursor.fetchone():
-        conn.close()
-        return redirect(url_for("helpdesk_dashboard"))
 
     cursor.execute("SELECT email FROM Local_Vendors WHERE email = ?", (email,))
     if cursor.fetchone():
@@ -63,7 +63,7 @@ def login():
 
 @app.route("/bidder")
 def bidder_dashboard():
-    return render_template("temp-dashboard.html")
+    return render_template("bidder.html")
 
 
 @app.route("/seller")
@@ -84,6 +84,8 @@ def register():
 @app.route("/temporary-dashboard")
 def temporary_dashboard():
     return render_template("temp-dashboard.html")
+
+
 
 
 if __name__ == "__main__":
