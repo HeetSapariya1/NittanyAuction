@@ -38,8 +38,8 @@ CREATE TABLE Bidders (
 -- 5. Helpdesk
 CREATE TABLE Helpdesk (
     email CHAR(255) PRIMARY KEY,
-    staff_id CHAR(50) UNIQUE NOT NULL,
-    staff_name CHAR(255) NOT NULL,
+    staff_id CHAR(50) UNIQUE ,
+    staff_name CHAR(255),
     position CHAR(255),
     hired_date DATE,
     FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE -- if a user is removed, delete it from HelpDesk
@@ -58,7 +58,7 @@ CREATE TABLE Sellers (
 CREATE TABLE Local_Vendors (
     email CHAR(255) PRIMARY KEY,
     business_name CHAR(255) NOT NULL,
-    ein CHAR(255) UNIQUE NOT NULL,      -- unique identifiier for local vendors
+    ein CHAR(255) UNIQUE,      -- unique identifiier for local vendors
     customer_service_phone CHAR(255),
     business_address_id INTEGER,
     FOREIGN KEY (email) REFERENCES Sellers(email) ON DELETE CASCADE, -- if a user is removed from Sellers, delete it from local_vendors
