@@ -1,6 +1,6 @@
 PRAGMA foreign_keys = ON;
 
--- DROP TABLES
+-- DROP TABLES 
 DROP TABLE IF EXISTS Local_Vendors;
 DROP TABLE IF EXISTS Sellers;
 DROP TABLE IF EXISTS Helpdesk;
@@ -10,22 +10,27 @@ DROP TABLE IF EXISTS Address;
 DROP TABLE IF EXISTS Zipcode_Info;
 
 -- ZIPCODE
+-- maps zip code to its specific city and state, which can be used to populate the address table and provide location information for users and vendors.
 CREATE TABLE Zipcode_Info (
-    zipcode TEXT PRIMARY KEY,
+    zipcode TEXT PRIMARY KEY, -- identifies zip code associated to city and state
     city TEXT NOT NULL,
     state_name TEXT NOT NULL
 );
 
 -- ADDRESS
+-- used by Bidders and Local Vendors 
 CREATE TABLE Address (
-    address_id TEXT PRIMARY KEY,
-    zipcode TEXT NOT NULL,
-    street_num TEXT NOT NULL,
+    address_id TEXT PRIMARY KEY, -- uniquely identify the address
+    zipcode TEXT NOT NULL, -- must have a valid zipcode that exists in the table 
+    street_num TEXT NOT NULL, 
     street_name TEXT NOT NULL,
-    FOREIGN KEY (zipcode) REFERENCES Zipcode_Info(zipcode)
+    FOREIGN KEY (zipcode) REFERENCES Zipcode_Info(zipcode) -- ensure zipcode is in zipcode table when inserting
 );
 
 -- USERS
+-- creates login credentials for bidders, sellers, helpdesk staff, and local vendors
+-- each user has a unique email across all roles 
+-- password associated to each email and is hashed 
 CREATE TABLE Users (
     email TEXT PRIMARY KEY,
     password TEXT NOT NULL
@@ -33,39 +38,39 @@ CREATE TABLE Users (
 
 -- BIDDERS
 CREATE TABLE Bidders (
-    email TEXT PRIMARY KEY,
+    email TEXT PRIMARY KEY, -- unique email for each bidder
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     age INTEGER,
     phone_number TEXT,
     major TEXT,
-    home_address_id TEXT,
-    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE,
+    home_address_id TEXT, -- reference to bidder address
+    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE, -- deleting a user removes the bidder as well
     FOREIGN KEY (home_address_id) REFERENCES Address(address_id)
 );
 
 -- HELPDESK
 CREATE TABLE Helpdesk (
-    email TEXT PRIMARY KEY,
+    email TEXT PRIMARY KEY, -- unique email for each helpdesk staff member
     position TEXT,
-    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE
+    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE -- deleting a user removes the helpdesk staff member as well
 );
 
 -- SELLERS
 CREATE TABLE Sellers (
-    email TEXT PRIMARY KEY,
+    email TEXT PRIMARY KEY, -- unique email for each seller
     bank_routing_number TEXT NOT NULL,
     bank_account_number TEXT NOT NULL,
     balance REAL DEFAULT 0,
-    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE
+    FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE -- deleting a user removes the seller as well
 );
 
--- LOCAL VENDORS
+-- LOCAL VENDORS (weak entit of Sellers)
 CREATE TABLE Local_Vendors (
-    email TEXT PRIMARY KEY,
+    email TEXT PRIMARY KEY, -- constrained to Sellers email, so each local vendor is also a seller
     business_name TEXT NOT NULL,
     business_address_id TEXT,
     customer_service_phone_number TEXT,
-    FOREIGN KEY (email) REFERENCES Sellers(email) ON DELETE CASCADE,
-    FOREIGN KEY (business_address_id) REFERENCES Address(address_id)
+    FOREIGN KEY (email) REFERENCES Sellers(email) ON DELETE CASCADE, -- deleting a seller removes the local vendor as well
+    FOREIGN KEY (business_address_id) REFERENCES Address(address_id) -- ensures valid address id exists s
 );

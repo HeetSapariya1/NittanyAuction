@@ -5,14 +5,17 @@ import hashlib
 def hash_password(plain: str) -> str:
     return hashlib.sha256(str(plain).encode()).hexdigest()
 
+# Connect to SQLite DB and enable foreign key constraints
 conn = sqlite3.connect("nittany_auction.db")
 conn.execute("PRAGMA foreign_keys = ON")
 
-with open("schema.sql", "r", encoding="utf-8") as f:
+# read from the existing schem.sql and execute it to create the tables
+with open("schema.sql", "r", encoding="utf-8") as f: 
     conn.executescript(f.read())
 
 cur = conn.cursor()
 
+# read the zipcode info and insert into db 
 with open("dataset/Zipcode_Info.csv", "r", encoding="utf-8-sig") as file:
     reader = csv.reader(file)
     next(reader)
