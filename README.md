@@ -1,13 +1,19 @@
 # NittanyAuction
 Nittany Auction codebase
+
 This website is created for the Nittany Auction. The user interface allows users to log in using registered information in the database to access the auction website. 
 
 Features:
 
-A main page that includes the header "Hospital Patient Portal" with a description of the portal and its use cases. Aswell as having a dropdown menu to access specific forms.
-There is a form that allows you to add a patient's first and last name, a unique identification number (pid) will be assigned to each patient using AUTOINCREMENT which provides unique ID numbers sequentially.
-There is a form that allows you to delete a patients first and last name. Both forms also include the table with the current updated information of the patients in the database.
-Included bootstrap modals which act as confirmation from the user incase they want to rethink their decision.
+- A main login page that uses bootstrap that securely collects user login information with error handling in the event of invalid login details.
+- Authentication system using hashing for passwords using SHA-256.
+- Role based routing, successful logins will redirect users to specific pages based on their user status.
+- Functions like logout
+
+
+----------------------------------------------WEB PROGRAMMING EXERCISE STUFF BELOW (USE AS TEMPLATE OR DELETE) ------------------------------------------------------------
+
+
 
 Organization:
 
