@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seller Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="seller-header">
+        <h1>Seller Dashboard</h1>
+
+        <div class="seller-header-right">
+            <button class="seller-top-btn">Profile</button>
+            <img src="{{ url_for('static', filename='images/psu-logo.png') }}" alt="PSU Logo" class="seller-logo">
+        </div>
+    </div>
+
+    <div class="seller-wrapper">
+        <div class="seller-watermark">
+            <img src="{{ url_for('static', filename='images/nittanylion.jpg') }}" alt="Watermark">
+        </div>
+
+        <div class="seller-form-box">
+            <input type="text" class="seller-input" placeholder="Product Name...">
+            <input type="text" class="seller-input" placeholder="Current Bid...">
+            <input type="text" class="seller-input" placeholder="Product Description...">
+            <input type="text" class="seller-input" placeholder="Product Image...">
+            <input type="text" class="seller-input" placeholder="End Time...">
+
+            <div class="seller-bottom-row">
+                <button class="seller-list-btn">List New Product</button>
+
+                <label class="premium-label">
+                    <input type="checkbox" class="premium-check">
+                    <span>Premium Item</span>
+                </label>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
