@@ -45,7 +45,7 @@ def login():
     cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
     if cursor.fetchone():
         conn.close()
-        return redirect(url_for("bidder_dashboard"))
+        return redirect(url_for("temporary_dashboard"))
 
     cursor.execute("SELECT email FROM Sellers WHERE email = ?", (email,))
     if cursor.fetchone():
