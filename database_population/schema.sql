@@ -112,8 +112,8 @@ CREATE TABLE Auction_Listings (
     Max_Bids INTEGER NOT NULL,
     Status INTEGER DEFAULT 1 CHECK (Status IN (0, 1, 2)), -- 0 not active , 1 active 2 sold
     PRIMARY KEY (Seller_Email, Listing_ID),
-    FOREIGN KEY (Seller_Email) REFERENCES Sellers(email),
-    FOREIGN KEY (Category) REFERENCES Categories(category_name)
+    FOREIGN KEY (Seller_Email) REFERENCES Sellers(email) ON DELETE CASCADE,
+    FOREIGN KEY (Category) REFERENCES Categories(category_name) 
 );
 
 
@@ -124,8 +124,8 @@ CREATE TABLE Bids (
     Listing_ID INTEGER NOT NULL,
     Bidder_Email TEXT NOT NULL,
     Bid_Price REAL NOT NULL,
-    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID),
-    FOREIGN KEY (Bidder_Email) REFERENCES Bidders(email)
+    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID) ON DELETE CASCADE,
+    FOREIGN KEY (Bidder_Email) REFERENCES Bidders(email) 
 );
 
 -- TRANSACTIONS
@@ -136,6 +136,6 @@ CREATE TABLE Transactions (
     Buyer_Email TEXT NOT NULL,
     Date TEXT NOT NULL,
     Payment REAL NOT NULL,
-    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID),
-    FOREIGN KEY (Buyer_Email) REFERENCES Bidders(email)
+    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID) ON DELETE CASCADE,
+    FOREIGN KEY (Buyer_Email) REFERENCES Bidders(email) 
 );
