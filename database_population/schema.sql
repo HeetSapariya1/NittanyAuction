@@ -8,6 +8,9 @@ DROP TABLE IF EXISTS Bidders;
 DROP TABLE IF EXISTS Users;
 DROP TABLE IF EXISTS Address;
 DROP TABLE IF EXISTS Zipcode_Info;
+DROP TABLE IF EXISTS Bids;
+DROP TABLE IF EXISTS Transactions;
+DROP TABLE IF EXISTS Auction_Listings;
 
 -- ZIPCODE
 -- maps zip code to its specific city and state, which can be used to populate the address table and provide location information for users and vendors.
@@ -96,4 +99,43 @@ CREATE TABLE Ratings (
     FOREIGN KEY (Seller_email) REFERENCES Sellers(email)
 );
     
-    
+-- AUCTION LISTINGS
+CREATE TABLE Auction_Listings (
+    Seller_Email TEXT NOT NULL,
+    Listing_ID INTEGER NOT NULL,
+    Category TEXT NOT NULL,
+    Auction_Title TEXT NOT NULL,
+    Product_Name TEXT NOT NULL,
+    Product_Description TEXT,
+    Quantity INTEGER DEFAULT 1,
+    Reserve_Price REAL NOT NULL,
+    Max_Bids INTEGER NOT NULL,
+    Status INTEGER DEFAULT 1 CHECK (Status IN (0, 1, 2)), -- 0 not active , 1 active 2 sold
+    PRIMARY KEY (Seller_Email, Listing_ID),
+    FOREIGN KEY (Seller_Email) REFERENCES Sellers(email),
+    FOREIGN KEY (Category) REFERENCES Categories(category_name)
+);
+
+
+-- BIDS
+CREATE TABLE Bids (
+    Bid_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Seller_Email TEXT NOT NULL,
+    Listing_ID INTEGER NOT NULL,
+    Bidder_Email TEXT NOT NULL,
+    Bid_Price REAL NOT NULL,
+    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID),
+    FOREIGN KEY (Bidder_Email) REFERENCES Bidders(email)
+);
+
+-- TRANSACTIONS
+CREATE TABLE Transactions (
+    Transaction_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Seller_Email TEXT NOT NULL,
+    Listing_ID INTEGER NOT NULL,
+    Buyer_Email TEXT NOT NULL,
+    Date TEXT NOT NULL,
+    Payment REAL NOT NULL,
+    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID),
+    FOREIGN KEY (Buyer_Email) REFERENCES Bidders(email)
+);
