@@ -42,11 +42,6 @@ def login():
         conn.close()
         return redirect(url_for("helpdesk_dashboard"))
 
-    cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
-    if cursor.fetchone():
-        conn.close()
-        return redirect(url_for("temporary_dashboard"))
-
     cursor.execute("SELECT email FROM Sellers WHERE email = ?", (email,))
     if cursor.fetchone():
         conn.close()
@@ -56,6 +51,11 @@ def login():
     if cursor.fetchone():
         conn.close()
         return redirect(url_for("seller_dashboard"))
+
+    cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return redirect(url_for("temporary_dashboard"))
 
     conn.close()
     return redirect(url_for("temporary_dashboard"))
