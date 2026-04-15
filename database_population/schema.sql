@@ -74,3 +74,13 @@ CREATE TABLE Local_Vendors (
     FOREIGN KEY (email) REFERENCES Sellers(email) ON DELETE CASCADE, -- deleting a seller removes the local vendor as well
     FOREIGN KEY (business_address_id) REFERENCES Address(address_id) -- ensures valid address id exists s
 );
+
+CREATE TABLE Credit_Cards (
+    credit_card_num TEXT PRIMARY KEY,
+    card_type TEXT NOT NULL,
+    expire_month INTEGER NOT NULL,
+    expire_year INTEGER NOT NULL,
+    security_code INTEGER NOT NULL,
+    Owner_email TEXT NOT NULL,
+    FOREIGN KEY (Owner_email) REFERENCES Users(email)
+);
