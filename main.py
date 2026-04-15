@@ -55,10 +55,10 @@ def login():
     cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
     if cursor.fetchone():
         conn.close()
-        return redirect(url_for("temporary_dashboard"))
-
+        return redirect(url_for("bidder_dashboard"))
+    
     conn.close()
-    return redirect(url_for("temporary_dashboard"))
+    return redirect(url_for("bidder_dashboard"))
 
 
 @app.route("/bidder")
@@ -87,9 +87,6 @@ def sell_product_dashboard():
 @app.route("/temporary-dashboard")
 def temporary_dashboard():
     return render_template("temp-dashboard.html")
-
-
-
 
 if __name__ == "__main__":
     app.run(debug=True)
