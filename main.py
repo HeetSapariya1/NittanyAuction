@@ -84,11 +84,13 @@ def register():
 def sell_product_dashboard():
     return render_template("sell-product-dashboard.html")
 
-
-
 @app.route("/temporary-dashboard")
 def temporary_dashboard():
     return render_template("temp-dashboard.html")
+
+@app.route("/my-bids-dashboard")
+def my_bids_dashboard():
+    return render_template("my-bids-dashboard.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
