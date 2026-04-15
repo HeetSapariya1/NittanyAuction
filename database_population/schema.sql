@@ -65,7 +65,7 @@ CREATE TABLE Sellers (
     FOREIGN KEY (email) REFERENCES Users(email) ON DELETE CASCADE -- deleting a user removes the seller as well
 );
 
--- LOCAL VENDORS (weak entit of Sellers)
+-- LOCAL VENDORS (weak entity of Sellers)
 CREATE TABLE Local_Vendors (
     email TEXT PRIMARY KEY, -- constrained to Sellers email, so each local vendor is also a seller
     business_name TEXT NOT NULL,
@@ -84,3 +84,16 @@ CREATE TABLE Credit_Cards (
     Owner_email TEXT NOT NULL,
     FOREIGN KEY (Owner_email) REFERENCES Users(email)
 );
+
+CREATE TABLE Ratings (
+    Bidder_email TEXT NOT NULL,
+    Seller_email TEXT NOT NULL,
+    Date TEXT NOT NULL,
+    Rating Rating INTEGER CHECK (Rating BETWEEN 1 AND 5),
+    Rating_Desc TEXT,
+    PRIMARY KEY( Bidder_email, Seller_email ),
+    FOREIGN KEY (Bidder_email) REFERENCES Bidders(email),
+    FOREIGN KEY (Seller_email) REFERENCES Sellers(email)
+);
+    
+    
