@@ -11,6 +11,9 @@ DROP TABLE IF EXISTS Zipcode_Info;
 DROP TABLE IF EXISTS Bids;
 DROP TABLE IF EXISTS Transactions;
 DROP TABLE IF EXISTS Auction_Listings;
+DROP TABLE IF EXISTS Categories;
+DROP TABLE IF EXISTS Credit_Cards;
+DROP TABLE IF EXISTS Ratings;
 
 -- ZIPCODE
 -- maps zip code to its specific city and state, which can be used to populate the address table and provide location information for users and vendors.
@@ -98,6 +101,14 @@ CREATE TABLE Ratings (
     FOREIGN KEY (Bidder_email) REFERENCES Bidders(email),
     FOREIGN KEY (Seller_email) REFERENCES Sellers(email)
 );
+
+-- CATEGORIES
+-- split into parent_category and category_name to allow for hierarchical categories like Sports -> Baseball
+CREATE TABLE Categories (
+    category_name TEXT PRIMARY KEY, -- unique name for each category
+    parent_category TEXT, 
+    FOREIGN KEY (parent_category) REFERENCES Categories(category_name) -- every category must have a parent category that exists in the table 
+);
     
 -- AUCTION LISTINGS
 CREATE TABLE Auction_Listings (
@@ -111,31 +122,30 @@ CREATE TABLE Auction_Listings (
     Reserve_Price REAL NOT NULL,
     Max_Bids INTEGER NOT NULL,
     Status INTEGER DEFAULT 1 CHECK (Status IN (0, 1, 2)), -- 0 not active , 1 active 2 sold
-    PRIMARY KEY (Seller_Email, Listing_ID),
-    FOREIGN KEY (Seller_Email) REFERENCES Sellers(email) ON DELETE CASCADE,
-    FOREIGN KEY (Category) REFERENCES Categories(category_name) 
+    PRIMARY KEY (Seller_Email, Listing_ID), -- composite primary key to allow sellers to have multiple listings 
+    FOREIGN KEY (Seller_Email) REFERENCES Sellers(email) ON DELETE CASCADE, -- deleting a seller removes the listing as well
+    FOREIGN KEY (Category) REFERENCES Categories(category_name) -- ensures category exists in categories table when inserting a listing
 );
-
 
 -- BIDS
 CREATE TABLE Bids (
-    Bid_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Bid_ID INTEGER PRIMARY KEY AUTOINCREMENT, -- bid id to uniquely identify each bid
     Seller_Email TEXT NOT NULL,
     Listing_ID INTEGER NOT NULL,
     Bidder_Email TEXT NOT NULL,
     Bid_Price REAL NOT NULL,
-    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID) ON DELETE CASCADE,
+    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID) ON DELETE CASCADE, -- deleting a seller or listing removes the bid
     FOREIGN KEY (Bidder_Email) REFERENCES Bidders(email) 
 );
 
 -- TRANSACTIONS
 CREATE TABLE Transactions (
-    Transaction_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Transaction_ID INTEGER PRIMARY KEY AUTOINCREMENT, -- transaction id to uniquely identify each transaction
     Seller_Email TEXT NOT NULL,
     Listing_ID INTEGER NOT NULL,
     Buyer_Email TEXT NOT NULL,
     Date TEXT NOT NULL,
     Payment REAL NOT NULL,
-    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID) ON DELETE CASCADE,
+    FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID) ON DELETE CASCADE, -- deeleting a seller or listing removes the transaction 
     FOREIGN KEY (Buyer_Email) REFERENCES Bidders(email) 
 );
