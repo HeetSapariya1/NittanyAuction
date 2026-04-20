@@ -20,12 +20,26 @@
             <img src="{{ url_for('static', filename='images/nittanylion.jpg') }}" alt="Watermark">
         </div>
 
-        <div class="seller-form-box">
-            <input type="text" class="seller-input" placeholder="Product Name...">
-            <input type="text" class="seller-input" placeholder="Current Bid...">
-            <input type="text" class="seller-input" placeholder="Product Description...">
-            <input type="text" class="seller-input" placeholder="Product Image...">
-            <input type="text" class="seller-input" placeholder="End Time...">
+        <form method="post" action="{{ url_for('sell_product_dashboard') }}" class="seller-form-box">
+
+            <!-- form for listing a new product product name is split into auction title and product name 
+                bid: reserve price. max bids: max number of bids allowed for this product. category is a drop down menu populated from the database
+                
+            -->
+
+            <input type="text" name="auction_title" class="seller-input" placeholder="Auction Title...">
+            <input type="text" name="product_name" class="seller-input" placeholder="Product Name...">
+            <input type="text" name="product_description" class="seller-input" placeholder="Product Description...">
+            <input type="number" name="reserve_price" class="seller-input" placeholder="Reserve Price...">
+            <input type="number" name="max_bids" step="1" min="1" class="seller-input" placeholder="Max Bids...">
+            
+            <select name="category" class="seller-input">
+                <!-- category drop down -->
+                <option value="" disabled selected>Select Category...</option>
+                {% for c in categories %}
+                    <option value="{{ c['category_name'] }}">{{ c['category_name'] }}</option>
+                {% endfor %}
+            </select>
 
             <div class="seller-bottom-row">
                 <button class="seller-list-btn">List New Product</button>
@@ -35,6 +49,7 @@
                     <span>Premium Item</span>
                 </label>
             </div>
+        </form>
         </div>
     </div>
 </body>
