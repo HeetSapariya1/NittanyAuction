@@ -117,6 +117,53 @@ def bidder_dashboard():
     )
 
 
+@app.route("/profile/update", methods=["Get", "POST"])
+def profile_update():
+    email = request.form.get('email', '').strip()
+
+    if not email:
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+
+    new_password = request.form.get('new_password', '').strip()
+    confirm_pass = request.form.get('confirm_password', '').strip()
+
+    # Check role by querying the DB
+    cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
+    if cursor.fetchone():
+        cursor.execute('''
+            UPDATE Bidders
+            SET first_name = ?, last_name = ?, age = ?, phone_number = ?, major = ?
+            WHERE email = ?
+        ''', (
+            request.form.get('first_name', '').strip(),
+            request.form.get('last_name', '').strip(),
+            request.form.get('age', '').strip() or None,
+            request.form.get('phone_number', '').strip(),
+            request.form.get('major', '').strip(),
+            email
+        ))
+        redirect_to = "bidder_dashboard"
+    else:
+        # Must be a seller — only password is updatable
+        redirect_to = "seller_dashboard"
+
+    if new_password:
+        if new_password != confirm_pass:
+            conn.close()
+            return redirect(url_for(redirect_to, error="Passwords do not match"))
+        cursor.execute(
+            "UPDATE Users SET password = ? WHERE email = ?",
+            (hash_password(new_password), email)
+        )
+
+    conn.commit()
+    conn.close()
+    return redirect(url_for(redirect_to))
+
 @app.route("/seller")
 def seller_dashboard():
     return render_template("seller.html")
@@ -150,5 +197,12 @@ def temporary_dashboard():
 def my_bids_dashboard():
     return render_template("my-bids-dashboard.html")
 
+@app.route("/update-bidder-info")
+def update_bidder_info():
+    return render_template("Update-bidder-info.html")
+
+@app.route("/update-bidder-info")
+def update_seller_info():
+    return render_template("Update-seller-info.html")
 if __name__ == "__main__":
     app.run(debug=True)
