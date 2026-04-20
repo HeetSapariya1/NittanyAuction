@@ -216,6 +216,10 @@ html, body {
 }
 
 .category-btn {
+    display: block;            /* make <a> behave like a block element so width:100% works */
+    box-sizing: border-box;    /* include padding in the width so it doesn't overflow the sidebar */
+    text-decoration: none;     /* remove the default underline  */
+    text-align: center;       
     width: 100%;
     margin-bottom: 18px;
     background: #183563;
@@ -227,6 +231,7 @@ html, body {
     font-weight: bold;
     cursor: pointer;
 }
+
 
 /* RIGHT SIDE */
 .dashboard-content {

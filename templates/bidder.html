@@ -49,22 +49,11 @@
         <div class="sidebar">
           <div class="sidebar-title">Categories</div>
 
-
           {% if current_category != "Root" %}
-            <a class="category-btn" href="{{ url_for('bidder_dashboard') }}">
-              ← All Categories
-            </a>
-            {% for node in tree[:-1] %}
-              <a class="category-btn"
-                href="{{ url_for('bidder_dashboard') }}?category={{ crumb }}">
-                ↑ {{ crumb }}
-              </a>
-            {% endfor %}
+            <a class="category-btn" href="{{ url_for('bidder_dashboard') }}">← All Categories</a>
             <div class="sidebar-title">In: {{ current_category }}</div>
           {% endif %}
 
-          {# the sidebar content comes from the DB query result passed in by the rout. 
-            No category name is hardcoded here #}
           {% for sub in subcategories %}
             <a class="category-btn"
               href="{{ url_for('bidder_dashboard') }}?category={{ sub }}">
@@ -74,6 +63,7 @@
             <div class="sidebar-empty">No subcategories</div>
           {% endfor %}
         </div>
+
 
 
         <div class="dashboard-content">

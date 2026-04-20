@@ -64,23 +64,18 @@ def login():
 @app.route("/bidder")
 # refreshes the bidder dashboard with the category the user clicked on, or Root if they just logged in.
 def bidder_dashboard():
-    # Read which category the user clicked. top-level categories all have parent_category='Root'.
     current_category = request.args.get("category", "Root")
 
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
 
-    # first query: only the children of the current category
     cursor.execute(
         "SELECT category_name FROM Categories WHERE parent_category = ?",
         (current_category,)
     )
     subcategories = [row[0] for row in cursor.fetchall()]
 
-    # secodn query: active products in this category.
-    # Status=1 means active per schema
-    # Skip when we're at 'Root' because Root holds no products, only subcategories.
     products = []
     if current_category != "Root":
         cursor.execute(
@@ -92,20 +87,6 @@ def bidder_dashboard():
         )
         products = cursor.fetchall()
 
-    # Tree mapping the parent tree so it is still dynamic, no tree preload.
-    tree = []
-    node = current_category
-    while node != "Root":
-        tree.insert(0, node)
-        cursor.execute(
-            "SELECT parent_category FROM Categories WHERE category_name = ?",
-            (node,)
-        )
-        row = cursor.fetchone()
-        if row is None:
-            break
-        node = row[0]
-
     conn.close()
 
     return render_template(
@@ -113,7 +94,6 @@ def bidder_dashboard():
         current_category=current_category,
         subcategories=subcategories,
         products=products,
-        tree=tree,
     )
 
 
