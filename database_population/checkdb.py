@@ -102,6 +102,14 @@ with open("dataset/Local_Vendors.csv", "r", encoding="utf-8-sig") as file:
         cleaned_row = [item.strip() for item in row]
         cur.execute("INSERT INTO Local_Vendors (email, business_name, business_address_id, customer_service_phone_number) VALUES (?, ?, ?, ?)", cleaned_row)
 
+# populate categories with category name and parent category (if applicable) from the Categories.csv file. 
+with open("dataset/Categories.csv", "r", encoding="utf-8-sig") as file:
+    reader = csv.reader(file)
+    next(reader)
+    for row in reader:
+        parent = row[0].strip()
+        name   = row[1].strip()
+        cur.execute("INSERT INTO Categories (category_name, parent_category) VALUES (?, ?)",(name, parent))
 
 conn.commit()
 

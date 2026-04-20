@@ -72,7 +72,7 @@ CREATE TABLE Sellers (
 );
 
 -- LOCAL VENDORS (weak entity of Sellers)
-CREATE TABLE Local_Vendors (
+CREATE TABLE Local_Vendors (    
     email TEXT PRIMARY KEY, -- constrained to Sellers email, so each local vendor is also a seller
     business_name TEXT NOT NULL,
     business_address_id TEXT,
@@ -95,7 +95,7 @@ CREATE TABLE Ratings (
     Bidder_email TEXT NOT NULL,
     Seller_email TEXT NOT NULL,
     Date TEXT NOT NULL,
-    Rating Rating INTEGER CHECK (Rating BETWEEN 1 AND 5),
+    Rating INTEGER CHECK (Rating BETWEEN 1 AND 5), -- rating must be between 1 and 5
     Rating_Desc TEXT,
     PRIMARY KEY( Bidder_email, Seller_email ),
     FOREIGN KEY (Bidder_email) REFERENCES Bidders(email),
@@ -106,8 +106,7 @@ CREATE TABLE Ratings (
 -- split into parent_category and category_name to allow for hierarchical categories like Sports -> Baseball
 CREATE TABLE Categories (
     category_name TEXT PRIMARY KEY, -- unique name for each category
-    parent_category TEXT, 
-    FOREIGN KEY (parent_category) REFERENCES Categories(category_name) -- every category must have a parent category that exists in the table 
+    parent_category TEXT
 );
     
 -- AUCTION LISTINGS
