@@ -181,7 +181,7 @@ def my_bids_dashboard():
 def update_bidder_info():
     return render_template("Update-bidder-info.html")
 
-@app.route("/update-bidder-info")
+@app.route("/update-seller-info")
 def update_seller_info():
     return render_template("Update-seller-info.html")
 if __name__ == "__main__":

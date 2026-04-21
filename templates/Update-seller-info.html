@@ -2,9 +2,64 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>update seller placeholder</title>
+    <title>Seller Profile Dashboard</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
+
+<!-- HEADER -->
+<div class="seller-header">
+    <h1>Seller Profile Dashboard</h1>
+
+    <div class="seller-header-right">
+        <img src="{{ url_for('static', filename='images/psu-logo.png') }}"
+             class="seller-logo"
+             alt="Logo">
+    </div>
+</div>
+
+<!-- MAIN WRAPPER -->
+<div class="seller-wrapper">
+
+    <!-- WATERMARK -->
+    <div class="seller-watermark">
+        <img src="{{ url_for('static', filename='images/Penn-State-University-Seal-Logo.png') }}"
+             alt="Watermark">
+    </div>
+
+    <h2 style="margin-left:6%; font-weight: normal;">Hello User!</h2>
+
+    <!-- FORM BOX -->
+    <div class="seller-form-box">
+
+        <!-- Top Row -->
+        <div style="display:flex; gap:8px;">
+            <input class="seller-input" placeholder="Bank Routing Number..." />
+            <input class="seller-input" placeholder="Bank Account Number..." />
+            <input class="seller-input" placeholder="Balance..." />
+        </div>
+
+        <input class="seller-input" placeholder="Major..." />
+        <input class="seller-input" placeholder="Age..." />
+        <input class="seller-input" placeholder="Annual Income..." />
+        <input class="seller-input" placeholder="Update Email..." />
+
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="seller-bottom-row">
+        <button class="seller-list-btn">Delete Profile</button>
+        <button class="seller-list-btn">Save Profile</button>
+
+        <label class="premium-label">
+            <input type="checkbox" class="premium-check">
+            Premium User
+        </label>
+    </div>
+
+</div>
 
 </body>
 </html>
