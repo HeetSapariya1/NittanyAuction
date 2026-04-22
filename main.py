@@ -78,13 +78,46 @@ def bidder_dashboard():
     if 'email' not in session or session.get('role') != 'bidder':
         return redirect(url_for("login"))
 
-    # load all categories from the database to populate the dropdown menu
+    selected_category = request.args.get("category", "").strip()
+    search_query = request.args.get("q", "").strip()
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+
+    # Every category, flat, for the dropdown
+    cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
+
+    # Build the listings query dynamically so we can combine category + search
+    sql = """SELECT Seller_Email, Listing_ID, Auction_Title, Product_Name, Reserve_Price
+             FROM Auction_Listings
+             WHERE Status = 1"""
+    params = []
+    if selected_category:
+        sql += " AND Category = ?"
+        params.append(selected_category)
+    if search_query:
+        sql += """ AND (Auction_Title    LIKE ?
+                    OR Product_Name      LIKE ?
+                    OR Product_Description LIKE ?
+                    OR Category          LIKE ?
+                    OR Seller_Email      LIKE ?)"""
+        like = f"%{search_query}%"
+        params.extend([like, like, like, like, like])
+    sql += " ORDER BY Auction_Title LIMIT 60"
+
+    cursor.execute(sql, params)
+    products = cursor.fetchall()
     conn.close()
-    return render_template("bidder.html", categories=categories)
+
+    return render_template(
+        "bidder.html",
+        categories=categories,
+        products=products,
+        selected_category=selected_category,
+        search_query=search_query,
+    )
+
 
 
 @app.route("/profile/update", methods=["POST"])
@@ -144,7 +177,7 @@ def seller_dashboard():
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+    cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
     cursor.execute(
         """SELECT Listing_ID, Category, Auction_Title, Product_Name,
@@ -172,9 +205,74 @@ def helpdesk_dashboard():
     return render_template("helpdesk.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    return render_template("register.html")
+    if request.method == "GET":
+        return render_template("register.html")
+
+    form = request.form
+    email = form.get("email", "").strip()
+    role = form.get("role", "Bidder")
+
+    if role == "HelpDesk":
+        flash("External registration for HelpDesk is not permitted.", "error")
+        return redirect(url_for("register"))
+
+    try:
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
+            cursor = conn.cursor()
+
+            cursor.execute("INSERT INTO Users (email, password) VALUES (?, ?)",
+                           (email, hash_password(form.get("password", ""))))
+
+            if role in ["Bidder", "Seller"]:
+                cursor.execute("""
+                               INSERT INTO Bidders (email, first_name, last_name, age, major, home_address_id)
+                               VALUES (?, ?, ?, ?, ?, ?)
+                               """, (
+                                   email,
+                                   form.get("first_name"),
+                                   form.get("last_name"),
+                                   form.get("age") or None,
+                                   form.get("major"),
+                                   form.get("home_address_id") or None
+                               ))
+
+            if role in ["Seller", "LocalVendor"]:
+                cursor.execute("""
+                               INSERT INTO Sellers (email, bank_routing_number, bank_account_number, balance)
+                               VALUES (?, ?, ?, 0.0)
+                               """, (email, form.get("bank_routing_number"), form.get("bank_account_number")))
+
+            if role == "LocalVendor":
+                cursor.execute("""
+                               INSERT INTO Local_Vendors (email, business_name, business_address_id,
+                                                          customer_service_phone_number)
+                               VALUES (?, ?, ?, ?)
+                               """, (
+                                   email,
+                                   form.get("business_name"),
+                                   form.get("business_address_id") or None,
+                                   form.get("customer_service_phone_number")
+                               ))
+
+    except sqlite3.IntegrityError:
+        # validity check
+        flash("Registration failed. Email already exists or Address ID is invalid.", "error")
+        return redirect(url_for("register"))
+
+    # Log them in
+    session['email'] = email
+    session['role'] = "Seller" if role in ["Seller", "LocalVendor"] else "Bidder"
+
+    flash("Registration successful! Welcome to Nittany Auction.", "success")
+
+    # redirect based on correct role
+    if session['role'] == "Bidder":
+        return redirect(url_for("bidder_dashboard"))
+    else:
+        return redirect(url_for("seller_dashboard"))
 
 @app.route("/sell-product-dashboard", methods=["GET", "POST"])
 def sell_product_dashboard():
@@ -245,7 +343,7 @@ def sell_product_dashboard():
             )
             conn.commit()
 
-            cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+            cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
             categories = [{"category_name": row[0]} for row in cursor.fetchall()]
             conn.close()
             return render_template(
@@ -254,7 +352,7 @@ def sell_product_dashboard():
                 success="Product listed successfully."
             )
 
-        cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+        cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
         categories = [{"category_name": row[0]} for row in cursor.fetchall()]
         conn.close()
         return render_template(
@@ -264,7 +362,7 @@ def sell_product_dashboard():
         )
 
     # load all categories from the database to populate the dropdown menu in the sell product dashboard
-    cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+    cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
     conn.close()
     return render_template("sell-product-dashboard.html", categories=categories)

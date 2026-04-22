@@ -32,15 +32,19 @@
         <button class="icon-btn">
           <i class="fa-solid fa-bell"></i>
         </button>
-        <button class="top-btn" style="background-color: #d9534f; color: white; border: none;" onclick="window.location.href='{{ url_for('logout') }}'">
+        <button
+          class="top-btn"
+          style="background-color: #d9534f; color: white; border: none"
+          onclick="window.location.href='{{ url_for('logout') }}'"
+        >
           Logout
         </button>
         <a href="{{ url_for('bidder_dashboard') }}">
-        <img
-          src="{{ url_for('static', filename='images/psu-logo.png') }}"
-          alt="Logo"
-          class="dashboard-logo"
-        />
+          <img
+            src="{{ url_for('static', filename='images/psu-logo.png') }}"
+            alt="Logo"
+            class="dashboard-logo"
+          />
         </a>
       </div>
     </div>
@@ -55,24 +59,35 @@
         </div>
 
         <div class="sidebar">
-          <div class="sidebar-title">Categories</div>
-          <select name="category" class="seller-input">
-            <!-- category drop down -->
-            <option value="" disabled selected>Select Category...</option>
+        <div class="sidebar-title">Categories</div>
+        <form method="GET" action="{{ url_for('bidder_dashboard') }}">
+          {# keep the active search term when the user changes category #}
+          <input type="hidden" name="q" value="{{ search_query or '' }}" />
+          <select name="category" class="seller-input" onchange="this.form.submit()">
+            <option value="" {% if not selected_category %}selected{% endif %}>All Categories</option>
             {% for c in categories %}
-            <option value="{{ c['category_name'] }}">
+            <option value="{{ c['category_name'] }}"
+              {% if c['category_name'] == selected_category %}selected{% endif %}>
               {{ c['category_name'] }}
             </option>
             {% endfor %}
           </select>
-        </div>
+        </form>
+      </div>
 
-        <div class="dashboard-content">
+      <div class="dashboard-content">
+        <form method="GET" action="{{ url_for('bidder_dashboard') }}">
+          {# keep the active category when the user searches #}
+          <input type="hidden" name="category" value="{{ selected_category or '' }}" />
           <input
             type="text"
+            name="q"
             class="search-box"
             placeholder="Search products..."
+            value="{{ search_query or '' }}"
           />
+        </form>
+
 
           <div class="product-grid">
             {# Each row from the Auction_Listings query. Column order matches
