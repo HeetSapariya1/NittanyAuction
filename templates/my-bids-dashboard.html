@@ -11,7 +11,12 @@
         <h1>My Bids</h1>
 
         <div class="header-buttons">
-            <button class="top-btn">Profile</button>
+            <button
+          class="top-btn"
+          onclick="window.location.href='{{ url_for('update_bidder_info') }}'"
+        >
+          Profile
+        </button>
             <button class="icon-btn">
                 <i class="fa-solid fa-bell"></i>
             </button>
