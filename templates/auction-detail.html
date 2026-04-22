@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- This pulls in the shared stylesheet for the auction pages. -->
     <title>{{ listing[2] }} — NittanyAuction</title>
     <link
       rel="stylesheet"
@@ -9,6 +10,7 @@
     />
   </head>
   <body>
+    <!-- The header gives the bidder a quick way to go back or log out. -->
     <div class="dashboard-header">
       <h1>Auction Detail</h1>
       <div class="header-buttons">
@@ -30,6 +32,7 @@
 
     <div class="dashboard-wrapper">
       <div class="dashboard-main">
+        <!-- This center box shows all the important information for one listing. -->
         <div
           class="dashboard-content"
           style="max-width: 600px; margin: auto; padding-top: 40px"
@@ -60,6 +63,7 @@
           </p>
 
           {% if listing[8] == 1 %} {% if last_bidder == current_user %}
+          <!-- This warning stops the same user from bidding twice in a row. -->
           <div
             style="
               padding: 10px;
@@ -73,6 +77,7 @@
             again.
           </div>
           {% else %}
+          <!-- This form lets the user submit a new bid for the current auction. -->
           <form method="POST" action="{{ url_for('place_bid') }}">
             <input type="hidden" name="seller_email" value="{{ listing[0] }}" />
             <input type="hidden" name="listing_id" value="{{ listing[1] }}" />

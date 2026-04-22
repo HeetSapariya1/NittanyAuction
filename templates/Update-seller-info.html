@@ -7,7 +7,6 @@
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="seller-header">
     <h1>Seller Profile Dashboard</h1>
     <div class="seller-header-right">
@@ -52,6 +51,7 @@
     <form method="POST" action="{{ url_for('profile_update') }}">
         <div class="seller-form-box">
 
+            <!-- These first inputs let the seller update bank information and view the current balance. -->
             <div style="display:flex; gap:8px;">
                 <input class="seller-input"
                      name="bank_routing_number"
@@ -67,7 +67,8 @@
                         disabled>
             </div>
 
-            <!-- Read-only email -->
+            <!-- The email stays read only so the account keeps a stable identifier. -->
+            <!-- Read only email -->
             <input class="seller-input"
                    placeholder="Email..."
                    value="{{ seller['email'] }}"
@@ -86,6 +87,7 @@
         </div>
 
         <div class="seller-bottom-row">
+            <!-- These buttons let the seller save changes or ask for account deletion help. -->
             <button type="button" class="seller-list-btn"
                     onclick="alert('Please contact HelpDesk to delete your account.')">
                 Delete Profile

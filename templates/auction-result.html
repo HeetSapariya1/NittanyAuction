@@ -22,6 +22,7 @@
     </div>
     <div class="dashboard-wrapper">
       <div class="dashboard-main">
+        <!-- This section summarizes how the auction ended for this listing. -->
         <div
           class="dashboard-content"
           style="max-width: 480px; margin: auto; padding-top: 40px"
@@ -30,6 +31,7 @@
           <p>Winning bid: <strong>${{ "%.2f"|format(winning_bid) }}</strong></p>
 
           {% if reserve_met %} {% if is_winner %}
+          <!-- If the logged in user won, we show the payment button here. -->
           <div
             style="
               padding: 16px;

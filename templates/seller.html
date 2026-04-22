@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <!-- This header holds the main seller actions like selling, profile, and logout. -->
     <div class="dashboard-header">
         <h1>NittanyAuction - Home</h1>
 
@@ -40,6 +41,7 @@
             </div>
 
             <div class="sidebar">
+                <!-- These links and dropdowns help filter listings by category, status, and premium view. -->
                 <div class="sidebar-title">Categories</div>
                 <form method="get" action="{{ url_for('seller_dashboard') }}">
                     <input type="hidden" name="status" value="{{ status_filter }}">
@@ -90,6 +92,7 @@
                 />
 
                 <div class="product-grid">
+                    <!-- Each card here represents one listing that belongs to the current seller. -->
                     {% for listing in seller_listings %}
                         <div class="product-card">
                             <strong>{{ listing[2] }}</strong><br>

@@ -71,6 +71,7 @@
 <body>
 
 <!-- HEADER -->
+<!-- This top area keeps the same navigation style as the other pages. -->
 <div class="dashboard-header">
     <h1>Confirmation Page</h1>
     <div class="header-buttons">
@@ -94,6 +95,7 @@
     </div>
 
     <div class="confirm-box">
+        <!-- This message tells the buyer their order flow is complete. -->
         <p>
             THANK YOU!<br><br>
             The seller is getting started on your order right away. In the
@@ -103,6 +105,7 @@
     </div>
 
     <form method="POST" action="{{ url_for('submit_rating') }}">
+        <!-- The hidden inputs store values we still need when the rating form is submitted. -->
         <input type="hidden" name="seller_email" value="{{ seller_email }}">
         <input type="hidden" name="rating" id="rating-value" value="0">
 

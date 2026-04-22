@@ -12,6 +12,7 @@
       href="{{ url_for('static', filename='style.css') }}"
     />
   <body>
+    <!-- This top section shows the page title and the main navigation buttons. -->
     <div class="dashboard-header">
       <h1>NittanyAuction - Home</h1>
 
@@ -51,6 +52,7 @@
 
     <div class="dashboard-wrapper">
       <div class="dashboard-main">
+        <!-- This faded image is just for background styling behind the content. -->
         <div class="dashboard-watermark">
           <img
             src="{{ url_for('static', filename='images/Penn-State-University-Seal-Logo.png') }}"
@@ -59,6 +61,7 @@
         </div>
 
         <div class="sidebar">
+        <!-- The sidebar lets the user filter listings by category and premium status. -->
         <div class="sidebar-title">Categories</div>
         {% if is_premium %}
         <div class="member-badge">Premium Member</div>
@@ -114,6 +117,7 @@
 
 
           <div class="product-grid">
+            <!-- This loop prints one product card for every listing sent in from Flask. -->
             {# Each row from the Auction_Listings query. Column order matches
             the SELECT in the route: (Seller_Email, Listing_ID, Auction_Title,
             Product_Name, Reserve_Price). #} {% for p in products %}

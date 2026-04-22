@@ -30,6 +30,7 @@
         </div>
 
         <form method="post" action="{{ url_for('sell_product_dashboard') }}" class="seller-form-box">
+            <!-- This form creates a brand new auction listing in the database. -->
             {% if error %}
                 <div class="sidebar-empty">{{ error }}</div>
             {% endif %}
@@ -51,6 +52,7 @@
             <input type="number" name="max_bids" step="1" min="1" class="seller-input" placeholder="Max Bids...">
             
             <select name="category" class="seller-input">
+                <!-- The category choices come from the categories table in Flask. -->
                 <!-- category drop down -->
                 <option value="" disabled selected>Select Category...</option>
                 {% for c in categories %}
