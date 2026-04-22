@@ -10,6 +10,14 @@
     <div class="dashboard-header">
         <h1>NittanyAuction - Home</h1>
 
+        <div style="font-weight: bold;">
+            ⭐
+            {% if avg_rating is not none %}
+            {{ "%.2f"|format(avg_rating) }}/5
+            {% else %}
+                No ratings
+            {% endif %}
+        </div>
         <div class="header-buttons">
             <button class="top-btn" onclick="window.location.href='{{ url_for('sell_product_dashboard') }}'">
                 Sell Product
