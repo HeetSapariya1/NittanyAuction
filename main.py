@@ -81,7 +81,7 @@ def bidder_dashboard():
     # load all categories from the database to populate the dropdown menu
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+    cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
     conn.close()
     return render_template("bidder.html", categories=categories)
