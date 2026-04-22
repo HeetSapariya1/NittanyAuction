@@ -73,41 +73,17 @@ def logout():
     return redirect(url_for("login"))
 
 @app.route("/bidder")
-# refreshes the bidder dashboard with the category the user clicked on, or Root if they just logged in.
 def bidder_dashboard():
     if 'email' not in session or session.get('role') != 'bidder':
         return redirect(url_for("login"))
-    current_category = request.args.get("category", "Root")
 
+    # load all categories from the database to populate the dropdown menu
     conn = sqlite3.connect(db_path)
-    conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT category_name FROM Categories WHERE parent_category = ?",
-        (current_category,)
-    )
-    subcategories = [row[0] for row in cursor.fetchall()]
-
-    products = []
-    if current_category != "Root":
-        cursor.execute(
-            """SELECT Seller_Email, Listing_ID, Auction_Title,
-                      Product_Name, Reserve_Price
-               FROM Auction_Listings
-               WHERE Category = ? AND Status = 1""",
-            (current_category,)
-        )
-        products = cursor.fetchall()
-
+    cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+    categories = [{"category_name": row[0]} for row in cursor.fetchall()]
     conn.close()
-
-    return render_template(
-        "bidder.html",
-        current_category=current_category,
-        subcategories=subcategories,
-        products=products,
-    )
+    return render_template("bidder.html", categories=categories)
 
 
 @app.route("/profile/update", methods=["POST"])
@@ -167,7 +143,14 @@ def profile_update():
 def seller_dashboard():
     if 'email' not in session or session.get('role') != 'seller':
         return redirect(url_for("login"))
-    return render_template("seller.html")
+
+    # load all categories from the database to populate the dropdown menu
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+    categories = [{"category_name": row[0]} for row in cursor.fetchall()]
+    conn.close()
+    return render_template("seller.html", categories=categories)
 
 
 @app.route("/helpdesk")
@@ -183,6 +166,9 @@ def register():
 
 @app.route("/sell-product-dashboard")
 def sell_product_dashboard():
+    if 'email' not in session or session.get('role') != 'seller':
+        return redirect(url_for("login"))
+
     # load all categories from the database to populate the dropdown menu in the sell product dashboard
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
