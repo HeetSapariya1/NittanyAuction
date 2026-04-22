@@ -117,6 +117,7 @@ CREATE TABLE Auction_Listings (
     Auction_Title TEXT NOT NULL,
     Product_Name TEXT NOT NULL,
     Product_Description TEXT,
+    Premium_Item INTEGER DEFAULT 0 CHECK (Premium_Item IN (0, 1)),
     Quantity INTEGER DEFAULT 1,
     Reserve_Price REAL NOT NULL,
     Max_Bids INTEGER NOT NULL,

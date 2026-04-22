@@ -175,18 +175,25 @@ def seller_dashboard():
     if 'email' not in session or session.get('role') != 'seller':
         return redirect(url_for("login"))
 
+    premium_only = request.args.get("premium") == "1"
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
-    cursor.execute(
-        """SELECT Listing_ID, Category, Auction_Title, Product_Name,
-                  Product_Description, Quantity, Reserve_Price, Max_Bids, Status
-           FROM Auction_Listings
-           WHERE Seller_Email = ?
-           ORDER BY Listing_ID DESC""",
-        (session['email'],)
-    )
+
+    sql = """SELECT Listing_ID, Category, Auction_Title, Product_Name,
+                    Product_Description, Premium_Item, Quantity, Reserve_Price, Max_Bids, Status
+             FROM Auction_Listings
+             WHERE Seller_Email = ?"""
+    params = [session['email']]
+
+    if premium_only:
+        sql += " AND Premium_Item = 1"
+
+    sql += " ORDER BY Listing_ID DESC"
+
+    cursor.execute(sql, params)
     seller_listings = cursor.fetchall()
 
     conn.close()
@@ -195,6 +202,7 @@ def seller_dashboard():
         categories=categories,
         seller_listings=seller_listings,
         seller_email=session['email'],
+        premium_only=premium_only,
     )
 
 
@@ -291,6 +299,7 @@ def sell_product_dashboard():
         max_bids_raw = request.form.get("max_bids", "").strip()
         quantity_raw = request.form.get("quantity", "").strip()
         category = request.form.get("category", "").strip()
+        premium_item = 1 if request.form.get("premium_item") == "1" else 0
 
         error = None
 
@@ -326,9 +335,9 @@ def sell_product_dashboard():
             cursor.execute(
                 """INSERT INTO Auction_Listings (
                        Seller_Email, Listing_ID, Category, Auction_Title,
-                       Product_Name, Product_Description, Quantity,
+                       Product_Name, Product_Description, Premium_Item, Quantity,
                        Reserve_Price, Max_Bids, Status
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
                 (
                     session['email'],
                     next_listing_id,
@@ -336,6 +345,7 @@ def sell_product_dashboard():
                     auction_title,
                     product_name,
                     product_description or None,
+                    premium_item,
                     quantity,
                     reserve_price,
                     max_bids,

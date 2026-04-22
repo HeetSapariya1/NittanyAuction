@@ -209,6 +209,8 @@ html, body {
     border-radius: 22px;
     box-shadow: 0 20px 45px rgba(11, 42, 91, 0.08);
     backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-title {
@@ -258,6 +260,16 @@ html, body {
     font-size: 14px;
     text-align: center;
     line-height: 1.4;
+}
+
+.sidebar-spacer {
+    flex: 1;
+    min-height: 24px;
+}
+
+.premium-filter-btn {
+    margin-top: auto;
+    margin-bottom: 0;
 }
 
 

@@ -48,6 +48,17 @@
                         <option value="{{ c['category_name'] }}">{{ c['category_name'] }}</option>
                     {% endfor %}
                 </select>
+                <div class="sidebar-spacer"></div>
+                {% if premium_only %}
+                    <a class="category-btn premium-filter-btn" href="{{ url_for('seller_dashboard') }}">
+                        Show All Listings
+                    </a>
+                    <div class="sidebar-empty">Premium filter is on</div>
+                {% else %}
+                    <a class="category-btn premium-filter-btn" href="{{ url_for('seller_dashboard', premium='1') }}">
+                        Premium Items Only
+                    </a>
+                {% endif %}
             </div>
 
             <div class="dashboard-content">
@@ -64,13 +75,19 @@
                             <strong>{{ listing[2] }}</strong><br>
                             {{ listing[3] }}<br>
                             Category: {{ listing[1] }}<br>
-                            Quantity: {{ listing[5] }}<br>
-                            Reserve: ${{ "%.2f"|format(listing[6]) }}<br>
-                            Max Bids: {{ listing[7] }}<br>
+                            Premium:
+                            {% if listing[5] == 1 %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}<br>
+                            Quantity: {{ listing[6] }}<br>
+                            Reserve: ${{ "%.2f"|format(listing[7]) }}<br>
+                            Max Bids: {{ listing[8] }}<br>
                             Status:
-                            {% if listing[8] == 0 %}
+                            {% if listing[9] == 0 %}
                                 Inactive
-                            {% elif listing[8] == 1 %}
+                            {% elif listing[9] == 1 %}
                                 Active
                             {% else %}
                                 Sold
