@@ -4,16 +4,42 @@
     <meta charset="UTF-8">
     <title>NittanyAuction Register</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="header">
-        <h1>NittanyAuction - Register</h1>
-    </div>
+    <style>
+        .overlay {
+            width: 500px;
+            max-width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 30px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+        }
 
-    <div class="hero">
-        <img src="{{ url_for('static', filename='images/nittanylion.jpg') }}" class="bg-img">
+        .overlay input, .overlay select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: none;
+            box-sizing: border-box;
+        }
+
+        .section-title {
+            color: white;
+            text-align: left;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding-bottom: 5px;
+        }
+    </style>
+</head>
+<body onload="toggleFields()">
+    <div class="hero" style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background-image: url('{{ url_for('static', filename='images/nittanylion.jpg') }}'); background-size: cover; background-position: center;">
+
         <div class="overlay">
-            <h2>Create Account</h2>
+            <h2 style="color: white; margin-bottom: 20px;">Create Account</h2>
 
             {% with messages = get_flashed_messages() %}
               {% if messages %}
@@ -23,62 +49,96 @@
 
             <form method="POST" action="/register">
 
-                <select name="role" id="roleSelect" onchange="toggleFields()" required style="width: 100%; margin-bottom: 10px; padding: 10px;">
+                <select name="role" id="roleSelect" onchange="toggleFields()" required>
                     <option value="Bidder">Register as Bidder</option>
-                    <option value="Seller">Register as Student Seller</option>
+                    <option value="Seller">Register as Seller</option>
                     <option value="LocalVendor">Register as Local Vendor</option>
                 </select>
 
-                <input type="email" name="email" placeholder="Email" required>
+                <h4 class="section-title">Login Details</h4>
+                <input type="email" name="email" placeholder="Email Address" required>
                 <input type="password" name="password" placeholder="Password" required>
 
-                <div id="personalFields">
+                <div id="personalSection">
+                    <h4 class="section-title">Personal Information</h4>
                     <input type="text" name="first_name" placeholder="First Name">
                     <input type="text" name="last_name" placeholder="Last Name">
                     <input type="number" name="age" placeholder="Age">
                     <input type="text" name="major" placeholder="Major">
-                    <input type="text" name="home_address_id" placeholder="Home Address ID">
+
+                    <h4 class="section-title">Home Address</h4>
+                    <input type="text" name="address_id" placeholder="Create Address ID">
+                    <input type="text" name="street_num" placeholder="Street #">
+                    <input type="text" name="street_name" placeholder="Street Name">
+                    <input type="text" name="city" placeholder="City">
+                    <input type="text" name="state" placeholder="State">
+                    <input type="text" name="zipcode" placeholder="Zipcode">
+
+                    <h4 class="section-title">Credit Card</h4>
+                    <input type="text" name="cc_number" placeholder="Card Number">
+                    <select name="cc_type">
+                        <option value="Visa">Visa</option>
+                        <option value="MasterCard">MasterCard</option>
+                    </select>
+                    <input type="number" name="cc_exp_month" placeholder="Exp Month (MM)">
+                    <input type="number" name="cc_exp_year" placeholder="Exp Year (YYYY)">
+                    <input type="number" name="cc_security_code" placeholder="CVV">
                 </div>
 
-                <div id="bankFields" style="display: none;">
-                    <input type="text" name="bank_routing_number" placeholder="Bank Routing Number">
-                    <input type="text" name="bank_account_number" placeholder="Bank Account Number">
-                </div>
-
-                <div id="vendorFields" style="display: none;">
+                <div id="businessSection" style="display:none;">
+                    <h4 class="section-title">Business Information</h4>
                     <input type="text" name="business_name" placeholder="Business Name">
-                    <input type="text" name="business_address_id" placeholder="Business Address ID">
                     <input type="text" name="customer_service_phone_number" placeholder="Customer Service Phone">
+
+                    <h4 class="section-title">Business Address</h4>
+                    <input type="text" name="business_address_id" placeholder="Create Business Address ID">
+                    <input type="text" name="business_street_num" placeholder="Street #">
+                    <input type="text" name="business_street_name" placeholder="Street Name">
+                    <input type="text" name="business_city" placeholder="City">
+                    <input type="text" name="business_state" placeholder="State">
+                    <input type="text" name="business_zipcode" placeholder="Zipcode">
                 </div>
 
-                <button type="submit">Create Account</button>
+                <div id="bankSection" style="display:none;">
+                    <h4 class="section-title">Banking Information</h4>
+                    <input type="text" name="bank_routing_number" placeholder="Bank Routing #">
+                    <input type="text" name="bank_account_number" placeholder="Bank Account #">
+                </div>
+
+                <button type="submit" style="width: 100%; padding: 12px; background-color: #1d3557; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 20px;">
+                    Register Now
+                </button>
             </form>
 
-            <p>Already have an account? <a href="{{ url_for('login') }}">Log In</a></p>
+            <p style="margin-top: 15px; color: white;">
+                Already have an account? <a href="{{ url_for('login') }}" style="color: white; font-weight: bold;">Log In</a>
+            </p>
         </div>
     </div>
 
     <script>
         function toggleFields() {
+            // 1. Get the current role and the div sections
             var role = document.getElementById("roleSelect").value;
-            var personalFields = document.getElementById("personalFields");
-            var bankFields = document.getElementById("bankFields");
-            var vendorFields = document.getElementById("vendorFields");
+            var personal = document.getElementById("personalSection");
+            var business = document.getElementById("businessSection");
+            var bank = document.getElementById("bankSection");
 
+            // 2. Logic: Show/Hide based on role
             if (role === "Bidder") {
-                personalFields.style.display = "block";
-                bankFields.style.display = "none";
-                vendorFields.style.display = "none";
-            } else if (role === "Seller") {
-                // Student Sellers need both personal and bank info
-                personalFields.style.display = "block";
-                bankFields.style.display = "block";
-                vendorFields.style.display = "none";
-            } else if (role === "LocalVendor") {
-                // Vendors don't need first/last name, just business and bank info
-                personalFields.style.display = "none";
-                bankFields.style.display = "block";
-                vendorFields.style.display = "block";
+                personal.style.display = "block";
+                business.style.display = "none";
+                bank.style.display = "none";
+            }
+            else if (role === "Seller") {
+                personal.style.display = "block";
+                business.style.display = "none";
+                bank.style.display = "block";
+            }
+            else if (role === "LocalVendor") {
+                personal.style.display = "none";
+                business.style.display = "block";
+                bank.style.display = "block";
             }
         }
     </script>

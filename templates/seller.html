@@ -41,21 +41,41 @@
 
             <div class="sidebar">
                 <div class="sidebar-title">Categories</div>
-                <select name="category" class="seller-input">
-                    <!-- category drop down -->
-                    <option value="" disabled selected>Select Category...</option>
-                    {% for c in categories %}
-                        <option value="{{ c['category_name'] }}">{{ c['category_name'] }}</option>
-                    {% endfor %}
-                </select>
+                <form method="get" action="{{ url_for('seller_dashboard') }}">
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                    {% if premium_only %}
+                        <input type="hidden" name="premium" value="1">
+                    {% endif %}
+                    <select name="category" class="seller-input" onchange="this.form.submit()">
+                        <option value="">All Categories</option>
+                        {% for c in categories %}
+                            <option value="{{ c['category_name'] }}" {% if selected_category == c['category_name'] %}selected{% endif %}>
+                                {{ c['category_name'] }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+                <div class="sidebar-title">Status Filter</div>
+                <a class="category-btn" href="{{ url_for('seller_dashboard', premium='1' if premium_only else None, category=selected_category if selected_category else None) }}">
+                    All Statuses
+                </a>
+                <a class="category-btn" href="{{ url_for('seller_dashboard', status='active', premium='1' if premium_only else None, category=selected_category if selected_category else None) }}">
+                    Active
+                </a>
+                <a class="category-btn" href="{{ url_for('seller_dashboard', status='inactive', premium='1' if premium_only else None, category=selected_category if selected_category else None) }}">
+                    Inactive
+                </a>
+                <a class="category-btn" href="{{ url_for('seller_dashboard', status='sold', premium='1' if premium_only else None, category=selected_category if selected_category else None) }}">
+                    Sold
+                </a>
                 <div class="sidebar-spacer"></div>
                 {% if premium_only %}
-                    <a class="category-btn premium-filter-btn" href="{{ url_for('seller_dashboard') }}">
+                    <a class="category-btn premium-filter-btn" href="{{ url_for('seller_dashboard', status=status_filter if status_filter != 'all' else None, category=selected_category if selected_category else None) }}">
                         Show All Listings
                     </a>
                     <div class="sidebar-empty">Premium filter is on</div>
                 {% else %}
-                    <a class="category-btn premium-filter-btn" href="{{ url_for('seller_dashboard', premium='1') }}">
+                    <a class="category-btn premium-filter-btn" href="{{ url_for('seller_dashboard', premium='1', status=status_filter if status_filter != 'all' else None, category=selected_category if selected_category else None) }}">
                         Premium Items Only
                     </a>
                 {% endif %}
@@ -86,12 +106,21 @@
                             Max Bids: {{ listing[8] }}<br>
                             Status:
                             {% if listing[9] == 0 %}
-                                Inactive
+                                <span class="listing-status status-inactive">Inactive</span>
                             {% elif listing[9] == 1 %}
-                                Active
+                                <span class="listing-status status-active">Active</span>
                             {% else %}
-                                Sold
+                                <span class="listing-status status-sold">Sold</span>
                             {% endif %}
+                            <form method="post" action="{{ url_for('update_listing_status') }}" class="status-form">
+                                <input type="hidden" name="listing_id" value="{{ listing[0] }}">
+                                <input type="hidden" name="premium" value="{% if premium_only %}1{% endif %}">
+                                <input type="hidden" name="status_filter" value="{{ status_filter }}">
+                                <input type="hidden" name="category_filter" value="{{ selected_category }}">
+                                <button type="submit" name="status" value="1" class="status-btn">Set Active</button>
+                                <button type="submit" name="status" value="0" class="status-btn">Set Inactive</button>
+                                <button type="submit" name="status" value="2" class="status-btn">Set Sold</button>
+                            </form>
                         </div>
                     {% else %}
                         <div class="product-card">You have not created any listings yet.</div>
