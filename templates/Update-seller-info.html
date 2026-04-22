@@ -10,6 +10,11 @@
 <div class="seller-header">
     <h1>Seller Profile Dashboard</h1>
     <div class="seller-header-right">
+        {% if can_switch_to_bidder %}
+        <button class="top-btn" onclick="window.location.href='{{ url_for('switch_dashboard', target='bidder') }}'">
+            Bidder Dashboard
+        </button>
+        {% endif %}
         <button
           class="top-btn"
           onclick="window.location.href='{{ url_for('update_bidder_info') }}'"
