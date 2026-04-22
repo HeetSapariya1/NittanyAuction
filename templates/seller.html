@@ -20,16 +20,16 @@
             <button class="icon-btn">
                 <i class="fa-solid fa-bell"></i>
             </button>
-        <button class="top-btn" style="background-color: #d9534f; color: white; border: none;" onclick="window.location.href='{{ url_for('logout') }}'">
-          Logout
-        </button>
-        <a href="{{ url_for('seller_dashboard') }}">
-        <img
-          src="{{ url_for('static', filename='images/psu-logo.png') }}"
-          alt="Logo"
-          class="dashboard-logo"
-        />
-        </a>
+            <button class="top-btn" style="background-color: #d9534f; color: white; border: none;" onclick="window.location.href='{{ url_for('logout') }}'">
+                Logout
+            </button>
+            <a href="{{ url_for('seller_dashboard') }}">
+                <img
+                    src="{{ url_for('static', filename='images/psu-logo.png') }}"
+                    alt="Logo"
+                    class="dashboard-logo"
+                />
+            </a>
         </div>
     </div>
 
@@ -50,9 +50,39 @@
                 </select>
             </div>
 
+            <div class="dashboard-content">
+                <input
+                    type="text"
+                    class="search-box"
+                    value="Your Listings"
+                    readonly
+                />
+
+                <div class="product-grid">
+                    {% for listing in seller_listings %}
+                        <div class="product-card">
+                            <strong>{{ listing[2] }}</strong><br>
+                            {{ listing[3] }}<br>
+                            Category: {{ listing[1] }}<br>
+                            Quantity: {{ listing[5] }}<br>
+                            Reserve: ${{ "%.2f"|format(listing[6]) }}<br>
+                            Max Bids: {{ listing[7] }}<br>
+                            Status:
+                            {% if listing[8] == 0 %}
+                                Inactive
+                            {% elif listing[8] == 1 %}
+                                Active
+                            {% else %}
+                                Sold
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="product-card">You have not created any listings yet.</div>
+                    {% endfor %}
+                </div>
 
                 <div class="next-page-row">
-                    <span>Next Page ➡</span>
+                    <span>{{ seller_listings|length }} listing(s)</span>
                 </div>
             </div>
         </div>

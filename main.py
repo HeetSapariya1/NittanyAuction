@@ -142,13 +142,27 @@ def seller_dashboard():
     if 'email' not in session or session.get('role') != 'seller':
         return redirect(url_for("login"))
 
-    # load all categories from the database to populate the dropdown menu
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
+    cursor.execute(
+        """SELECT Listing_ID, Category, Auction_Title, Product_Name,
+                  Product_Description, Quantity, Reserve_Price, Max_Bids, Status
+           FROM Auction_Listings
+           WHERE Seller_Email = ?
+           ORDER BY Listing_ID DESC""",
+        (session['email'],)
+    )
+    seller_listings = cursor.fetchall()
+
     conn.close()
-    return render_template("seller.html", categories=categories)
+    return render_template(
+        "seller.html",
+        categories=categories,
+        seller_listings=seller_listings,
+        seller_email=session['email'],
+    )
 
 
 @app.route("/helpdesk")
