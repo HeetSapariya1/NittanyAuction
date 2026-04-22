@@ -235,5 +235,11 @@ def update_seller_info():
         return redirect(url_for("login"))
     return render_template("Update-seller-info.html")
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been successfully logged out.", "info")
+    return redirect(url_for("login"))
+
 if __name__ == "__main__":
     app.run(debug=True)
