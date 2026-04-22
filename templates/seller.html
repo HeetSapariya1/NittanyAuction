@@ -91,6 +91,18 @@
                     readonly
                 />
 
+                {% if update_error %}
+                    <div class="sidebar-empty" style="margin-bottom: 12px; color: #721c24; background: #f8d7da;">
+                        {{ update_error }}
+                    </div>
+                {% endif %}
+
+                {% if update_success %}
+                    <div class="sidebar-empty" style="margin-bottom: 12px; color: #155724; background: #d4edda;">
+                        {{ update_success }}
+                    </div>
+                {% endif %}
+
                 <div class="product-grid">
                     <!-- Each card here represents one listing that belongs to the current seller. -->
                     {% for listing in seller_listings %}
@@ -108,6 +120,7 @@
                             Reserve: ${{ "%.2f"|format(listing[7]) }}<br>
                             Max Bids: {{ listing[8] }}<br>
                             Remaining Bids: {{ listing[9] }}<br>
+                            Bids Placed: {{ listing[12] }}<br>
                             Status:
                             {% if listing[10] == 0 %}
                                 <span class="listing-status status-inactive">Inactive</span>
@@ -116,18 +129,81 @@
                             {% else %}
                                 <span class="listing-status status-sold">Sold</span>
                             {% endif %}
+                            <br>
+                            {% if listing[10] == 2 %}
+                                <span style="color: #721c24;">Editing is blocked because this listing has already been sold.</span>
+                            {% elif listing[10] == 1 and listing[12] > 0 %}
+                                <span style="color: #856404;">Editing is blocked because bidding has already started on this active listing. It also cannot be deleted or taken inactive now.</span>
+                            {% else %}
+                                <span style="color: #155724;">This listing can still be edited.</span>
+                            {% endif %}
                             <form method="post" action="{{ url_for('update_listing_status') }}" class="status-form">
                                 <input type="hidden" name="listing_id" value="{{ listing[0] }}">
                                 <input type="hidden" name="premium" value="{% if premium_only %}1{% endif %}">
                                 <input type="hidden" name="status_filter" value="{{ status_filter }}">
                                 <input type="hidden" name="category_filter" value="{{ selected_category }}">
-                                <button type="submit" name="status" value="1" class="status-btn">Set Active</button>
-                                <button type="submit" name="status" value="0" class="status-btn">Set Inactive</button>
-                                <button type="submit" name="status" value="2" class="status-btn">Set Sold</button>
+                                {% if listing[10] == 2 %}
+                                    <button type="button" class="status-btn" style="opacity: 0.6; cursor: not-allowed;" disabled>Set Active</button>
+                                {% else %}
+                                    <button type="submit" name="status" value="1" class="status-btn">Set Active</button>
+                                {% endif %}
+                                {% if listing[12] > 0 %}
+                                    <button type="button" class="status-btn" style="opacity: 0.6; cursor: not-allowed;" disabled>Set Inactive Blocked</button>
+                                {% else %}
+                                    <button type="submit" name="status" value="0" class="status-btn">Set Inactive</button>
+                                {% endif %}
+                                {% if listing[10] != 2 and not (listing[10] == 1 and listing[12] > 0) %}
+                                <button type="button" class="status-btn" onclick="document.getElementById('edit-modal-{{ listing[0] }}').showModal()">
+                                    Edit Listing
+                                </button>
+                                {% else %}
+                                <button type="button" class="status-btn" style="opacity: 0.6; cursor: not-allowed;" disabled>
+                                    Edit Listing Blocked
+                                </button>
+                                {% endif %}
                             </form>
-                            <button type="button" class="delete-btn" onclick="document.getElementById('delete-modal-{{ listing[0] }}').showModal()">
-                                Delete Listing
-                            </button>
+                            {% if listing[12] > 0 %}
+                                <button type="button" class="delete-btn" style="opacity: 0.6; cursor: not-allowed;" disabled>
+                                    Delete Blocked
+                                </button>
+                            {% else %}
+                                <button type="button" class="delete-btn" onclick="document.getElementById('delete-modal-{{ listing[0] }}').showModal()">
+                                    Delete Listing
+                                </button>
+                            {% endif %}
+                            <dialog id="edit-modal-{{ listing[0] }}" class="delete-modal" {% if edit_listing_id == listing[0]|string and update_error %}open{% endif %}>
+                                <form method="dialog" class="delete-modal-close-row">
+                                    <button class="delete-modal-close" type="submit">X</button>
+                                </form>
+                                <h3>Edit Listing</h3>
+                                <p>Update the details for "{{ listing[2] }}".</p>
+                                <form method="post" action="{{ url_for('update_listing') }}" class="delete-form">
+                                    <input type="hidden" name="listing_id" value="{{ listing[0] }}">
+                                    <input type="hidden" name="premium" value="{% if premium_only %}1{% endif %}">
+                                    <input type="hidden" name="status_filter" value="{{ status_filter }}">
+                                    <input type="hidden" name="category_filter" value="{{ selected_category }}">
+                                    <input type="text" name="auction_title" class="seller-input" value="{{ listing[2] }}" placeholder="Auction Title..." required>
+                                    <input type="text" name="product_name" class="seller-input" value="{{ listing[3] }}" placeholder="Product Name..." required>
+                                    <input type="text" name="product_description" class="seller-input" value="{{ listing[4] or '' }}" placeholder="Product Description...">
+                                    <input type="number" name="quantity" class="seller-input" min="1" step="1" value="{{ listing[6] }}" placeholder="Quantity..." required>
+                                    <input type="number" name="reserve_price" class="seller-input" min="0" step="0.01" value="{{ listing[7] }}" placeholder="Reserve Price..." required>
+                                    <input type="number" name="max_bids" class="seller-input" min="1" step="1" value="{{ listing[8] }}" placeholder="Max Bids..." required>
+                                    <select name="category" class="seller-input" required>
+                                        {% for c in categories %}
+                                            <option value="{{ c['category_name'] }}" {% if listing[1] == c['category_name'] %}selected{% endif %}>
+                                                {{ c['category_name'] }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <label class="premium-label" style="justify-content: flex-start; margin-top: 8px;">
+                                        <input type="checkbox" name="premium_item" class="premium-check" {% if listing[5] == 1 %}checked{% endif %}>
+                                        <span>Premium Item</span>
+                                    </label>
+                                    <div class="delete-actions">
+                                        <button type="submit" class="delete-confirm-btn">Save Changes</button>
+                                    </div>
+                                </form>
+                            </dialog>
                             <dialog id="delete-modal-{{ listing[0] }}" class="delete-modal">
                                 <form method="dialog" class="delete-modal-close-row">
                                     <button class="delete-modal-close" type="submit">X</button>

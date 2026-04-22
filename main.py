@@ -14,6 +14,53 @@ def hash_password(plain: str) -> str:
     return hashlib.sha256(str(plain).encode()).hexdigest()
 
 
+def build_seller_dashboard_redirect_args(premium="", status_filter="all", category_filter=""):
+    redirect_args = {}
+    if premium == "1":
+        redirect_args["premium"] = "1"
+    if status_filter and status_filter != "all":
+        redirect_args["status"] = status_filter
+    if category_filter:
+        redirect_args["category"] = category_filter
+    return redirect_args
+
+
+def validate_listing_form(form):
+    auction_title = form.get("auction_title", "").strip()
+    product_name = form.get("product_name", "").strip()
+    product_description = form.get("product_description", "").strip()
+    reserve_price_raw = form.get("reserve_price", "").strip()
+    max_bids_raw = form.get("max_bids", "").strip()
+    quantity_raw = form.get("quantity", "").strip()
+    category = form.get("category", "").strip()
+    premium_item = 1 if form.get("premium_item") else 0
+
+    if not auction_title or not product_name or not reserve_price_raw or not max_bids_raw or not category:
+        return None, "Please fill in all required fields."
+
+    try:
+        reserve_price = float(reserve_price_raw.replace("$", "").replace(",", ""))
+        max_bids = int(max_bids_raw)
+        quantity = int(quantity_raw) if quantity_raw else 1
+    except ValueError:
+        return None, "Reserve price, quantity, and max bids must be valid numbers."
+
+    if reserve_price < 0 or max_bids < 1 or quantity < 1:
+        return None, "Reserve price must be 0 or more, and quantity/max bids must be at least 1."
+
+    listing_values = {
+        "auction_title": auction_title,
+        "product_name": product_name,
+        "product_description": product_description or None,
+        "reserve_price": reserve_price,
+        "max_bids": max_bids,
+        "quantity": quantity,
+        "category": category,
+        "premium_item": premium_item,
+    }
+    return listing_values, None
+
+
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
@@ -215,11 +262,14 @@ def seller_dashboard():
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
 
 
-    sql = """SELECT Listing_ID, Category, Auction_Title, Product_Name,
-                    Product_Description, Premium_Item, Quantity, Reserve_Price, Max_Bids,
-                    Remaining_Bids, Status, Removal_Reason
+    sql = """SELECT AL.Listing_ID, AL.Category, AL.Auction_Title, AL.Product_Name,
+                    AL.Product_Description, AL.Premium_Item, AL.Quantity, AL.Reserve_Price, AL.Max_Bids,
+                    AL.Remaining_Bids, AL.Status, AL.Removal_Reason,
+                    (SELECT COUNT(*) FROM Bids B
+                     WHERE B.Seller_Email = AL.Seller_Email AND B.Listing_ID = AL.Listing_ID) AS Bid_Count
              FROM Auction_Listings
-             WHERE Seller_Email = ?"""
+             AL
+             WHERE AL.Seller_Email = ?"""
     params = [session['email']]
 
     if premium_only:
@@ -248,7 +298,10 @@ def seller_dashboard():
         seller_email=session['email'],
         premium_only=premium_only,
         status_filter=status_filter,
-        selected_category=selected_category
+        selected_category=selected_category,
+        update_error=request.args.get("update_error", "").strip(),
+        update_success=request.args.get("update_success", "").strip(),
+        edit_listing_id=request.args.get("edit_listing_id", "").strip()
     )
 
 
@@ -264,15 +317,45 @@ def update_listing_status():
     category_filter = request.form.get("category_filter", "").strip()
     removal_reason = request.form.get("removal_reason", "").strip()
 
-    status_map = {"0", "1", "2"}
+    status_map = {"0", "1"}
     if not listing_id.isdigit() or new_status not in status_map:
         return redirect(url_for("seller_dashboard", premium=premium, status=status_filter, category=category_filter))
 
-    removal_reason_value = (removal_reason or None) if int(new_status) in (0, 2) else None
+    removal_reason_value = (removal_reason or None) if int(new_status) == 0 else None
 
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
+    cursor.execute(
+        """SELECT Status,
+                  (SELECT COUNT(*) FROM Bids B
+                   WHERE B.Seller_Email = Auction_Listings.Seller_Email
+                     AND B.Listing_ID = Auction_Listings.Listing_ID) AS Bid_Count
+           FROM Auction_Listings
+           WHERE Seller_Email = ? AND Listing_ID = ?""",
+        (session['email'], int(listing_id))
+    )
+    listing = cursor.fetchone()
+
+    redirect_args = build_seller_dashboard_redirect_args(premium, status_filter, category_filter)
+
+    if listing is None:
+        conn.close()
+        redirect_args["update_error"] = "Listing not found."
+        return redirect(url_for("seller_dashboard", **redirect_args))
+
+    current_status, bid_count = listing
+
+    if int(new_status) == 0 and bid_count > 0:
+        conn.close()
+        redirect_args["update_error"] = "This listing cannot be set to inactive because bidding has already started."
+        return redirect(url_for("seller_dashboard", **redirect_args))
+
+    if current_status == 2:
+        conn.close()
+        redirect_args["update_error"] = "Sold listings cannot be changed here."
+        return redirect(url_for("seller_dashboard", **redirect_args))
+
     cursor.execute(
         """UPDATE Auction_Listings
            SET Status = ?,
@@ -288,13 +371,112 @@ def update_listing_status():
     conn.commit()
     conn.close()
 
-    redirect_args = {}
-    if premium == "1":
-        redirect_args["premium"] = "1"
-    if status_filter and status_filter != "all":
-        redirect_args["status"] = status_filter
-    if category_filter:
-        redirect_args["category"] = category_filter
+    return redirect(url_for("seller_dashboard", **redirect_args))
+
+
+@app.route("/seller/update-listing", methods=["POST"])
+def update_listing():
+    if 'email' not in session or session.get('role') != 'seller':
+        return redirect(url_for("login"))
+
+    listing_id = request.form.get("listing_id", "").strip()
+    premium = request.form.get("premium", "").strip()
+    status_filter = request.form.get("status_filter", "all").strip().lower()
+    category_filter = request.form.get("category_filter", "").strip()
+
+    redirect_args = build_seller_dashboard_redirect_args(premium, status_filter, category_filter)
+    redirect_args["edit_listing_id"] = listing_id
+
+    if not listing_id.isdigit():
+        redirect_args["update_error"] = "Invalid listing selected."
+        return redirect(url_for("seller_dashboard", **redirect_args))
+
+    listing_values, error = validate_listing_form(request.form)
+    if error:
+        redirect_args["update_error"] = error
+        return redirect(url_for("seller_dashboard", **redirect_args))
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT 1 FROM Categories WHERE category_name = ?",
+        (listing_values["category"],)
+    )
+    if cursor.fetchone() is None:
+        conn.close()
+        redirect_args["update_error"] = "Please select a valid category."
+        return redirect(url_for("seller_dashboard", **redirect_args))
+
+    cursor.execute(
+        """SELECT Status, Max_Bids, Remaining_Bids,
+                  (SELECT COUNT(*) FROM Bids B
+                   WHERE B.Seller_Email = Auction_Listings.Seller_Email
+                     AND B.Listing_ID = Auction_Listings.Listing_ID) AS Bid_Count
+           FROM Auction_Listings
+           WHERE Seller_Email = ? AND Listing_ID = ?""",
+        (session['email'], int(listing_id))
+    )
+    listing = cursor.fetchone()
+
+    if listing is None:
+        conn.close()
+        redirect_args["update_error"] = "Listing not found."
+        return redirect(url_for("seller_dashboard", **redirect_args))
+
+    current_status, current_max_bids, current_remaining_bids, bid_count = listing
+
+    if current_status == 2:
+        conn.close()
+        redirect_args["update_error"] = "Sold listings cannot be updated."
+        return redirect(url_for("seller_dashboard", **redirect_args))
+
+    if current_status == 1 and bid_count > 0:
+        conn.close()
+        redirect_args["update_error"] = "This active listing cannot be updated because bidding has already started."
+        return redirect(url_for("seller_dashboard", **redirect_args))
+
+    new_remaining_bids = listing_values["max_bids"]
+    if current_max_bids is not None and current_remaining_bids is not None:
+        bids_used = max(current_max_bids - current_remaining_bids, 0)
+        if listing_values["max_bids"] < bids_used:
+            conn.close()
+            redirect_args["update_error"] = f"Max bids cannot be set below {bids_used} because that many bids have already been used."
+            return redirect(url_for("seller_dashboard", **redirect_args))
+        new_remaining_bids = max(listing_values["max_bids"] - bids_used, 0)
+
+    cursor.execute(
+        """UPDATE Auction_Listings
+           SET Category = ?,
+               Auction_Title = ?,
+               Product_Name = ?,
+               Product_Description = ?,
+               Premium_Item = ?,
+               Quantity = ?,
+               Reserve_Price = ?,
+               Max_Bids = ?,
+               Remaining_Bids = ?
+           WHERE Seller_Email = ? AND Listing_ID = ?""",
+        (
+            listing_values["category"],
+            listing_values["auction_title"],
+            listing_values["product_name"],
+            listing_values["product_description"],
+            listing_values["premium_item"],
+            listing_values["quantity"],
+            listing_values["reserve_price"],
+            listing_values["max_bids"],
+            new_remaining_bids,
+            session['email'],
+            int(listing_id),
+        )
+    )
+    conn.commit()
+    conn.close()
+
+    redirect_args.pop("edit_listing_id", None)
+    redirect_args["update_success"] = "Listing updated successfully."
     return redirect(url_for("seller_dashboard", **redirect_args))
 
 
@@ -316,12 +498,22 @@ def delete_listing():
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute(
-        """SELECT Auction_Title, Status
+        """SELECT Auction_Title, Status,
+                  (SELECT COUNT(*) FROM Bids B
+                   WHERE B.Seller_Email = Auction_Listings.Seller_Email
+                     AND B.Listing_ID = Auction_Listings.Listing_ID) AS Bid_Count
            FROM Auction_Listings
            WHERE Seller_Email = ? AND Listing_ID = ?""",
         (session['email'], int(listing_id))
     )
     listing = cursor.fetchone()
+
+    redirect_args = build_seller_dashboard_redirect_args(premium, status_filter, category_filter)
+
+    if listing is not None and listing[2] > 0:
+        conn.close()
+        redirect_args["update_error"] = "This listing cannot be deleted because bidding has already started."
+        return redirect(url_for("seller_dashboard", **redirect_args))
 
     if listing is not None:
         cursor.execute(
@@ -347,13 +539,6 @@ def delete_listing():
 
     conn.close()
 
-    redirect_args = {}
-    if premium == "1":
-        redirect_args["premium"] = "1"
-    if status_filter and status_filter != "all":
-        redirect_args["status"] = status_filter
-    if category_filter:
-        redirect_args["category"] = category_filter
     return redirect(url_for("seller_dashboard", **redirect_args))
 
 
@@ -443,33 +628,12 @@ def sell_product_dashboard():
     cursor = conn.cursor()
 
     if request.method == "POST":
-        auction_title = request.form.get("auction_title", "").strip()
-        product_name = request.form.get("product_name", "").strip()
-        product_description = request.form.get("product_description", "").strip()
-        reserve_price_raw = request.form.get("reserve_price", "").strip()
-        max_bids_raw = request.form.get("max_bids", "").strip()
-        quantity_raw = request.form.get("quantity", "").strip()
-        category = request.form.get("category", "").strip()
-        premium_item = 1 if request.form.get("premium_item") == "1" else 0
-
-        error = None
-
-        if not auction_title or not product_name or not reserve_price_raw or not max_bids_raw or not category:
-            error = "Please fill in all required fields."
-        else:
-            try:
-                reserve_price = float(reserve_price_raw.replace("$", "").replace(",", ""))
-                max_bids = int(max_bids_raw)
-                quantity = int(quantity_raw) if quantity_raw else 1
-                if reserve_price < 0 or max_bids < 1 or quantity < 1:
-                    error = "Reserve price must be 0 or more, and quantity/max bids must be at least 1."
-            except ValueError:
-                error = "Reserve price, quantity, and max bids must be valid numbers."
+        listing_values, error = validate_listing_form(request.form)
 
         if error is None:
             cursor.execute(
                 "SELECT 1 FROM Categories WHERE category_name = ?",
-                (category,)
+                (listing_values["category"],)
             )
             if cursor.fetchone() is None:
                 error = "Please select a valid category."
@@ -492,15 +656,15 @@ def sell_product_dashboard():
                 (
                     session['email'],
                     next_listing_id,
-                    category,
-                    auction_title,
-                    product_name,
-                    product_description or None,
-                    premium_item,
-                    quantity,
-                    reserve_price,
-                    max_bids,
-                    max_bids,
+                    listing_values["category"],
+                    listing_values["auction_title"],
+                    listing_values["product_name"],
+                    listing_values["product_description"],
+                    listing_values["premium_item"],
+                    listing_values["quantity"],
+                    listing_values["reserve_price"],
+                    listing_values["max_bids"],
+                    listing_values["max_bids"],
                     None,
                 )
             )
