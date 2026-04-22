@@ -760,6 +760,10 @@ def place_bid():
         conn.close()
         return reject(f"Bid too low. Minimum bid is ${highest_bid + 1.0:.2f}.")
 
+    if bid_price > highest_bid + 2000.0:
+        conn.close()
+        return reject(f"Bid too high. Maximum bid is ${highest_bid + 2000.0:.2f}.")
+
     # Rule 3: no consecutive bids
     cursor.execute("""
         SELECT Bidder_Email FROM Bids
