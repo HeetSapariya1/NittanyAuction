@@ -15,8 +15,22 @@
                 onclick="window.location.href='{{ url_for('update_seller_info') }}'">
             Become a Seller
         </button>
-        <img src="{{ url_for('static', filename='images/psu-logo.png') }}"
-             class="seller-logo" alt="Logo">
+        <button
+          class="top-btn"
+          onclick="window.location.href='{{ url_for('update_bidder_info') }}'"
+        >
+          Profile
+        </button>
+            <button class="top-btn" style="background-color: #d9534f; color: white; border: none;" onclick="window.location.href='{{ url_for('logout') }}'">
+              Logout
+            </button>
+            <a href="{{ url_for('bidder_dashboard') }}">
+            <img
+              src="{{ url_for('static', filename='images/psu-logo.png') }}"
+              alt="Logo"
+              class="dashboard-logo"
+            />
+            </a>
     </div>
 </div>
 
@@ -105,7 +119,11 @@
             </button>
             <button type="submit" class="seller-list-btn">Save Profile</button>
             <label class="premium-label">
-                <input type="checkbox" class="premium-check"> Premium User
+                <input type="checkbox"
+                    class="premium-check"
+                    name="premium_user"
+                     {% if bidder['Premium_User'] == 1 %}checked{% endif %}>
+                 Premium User
             </label>
         </div>
 

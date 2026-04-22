@@ -15,8 +15,22 @@
                 onclick="window.location.href='{{ url_for('seller_dashboard') }}'">
             ← Home
         </button>
-        <img src="{{ url_for('static', filename='images/psu-logo.png') }}"
-             class="seller-logo" alt="Logo">
+        <button
+          class="top-btn"
+          onclick="window.location.href='{{ url_for('update_bidder_info') }}'"
+        >
+          Profile
+        </button>
+            <button class="top-btn" style="background-color: #d9534f; color: white; border: none;" onclick="window.location.href='{{ url_for('logout') }}'">
+              Logout
+            </button>
+            <a href="{{ url_for('bidder_dashboard') }}">
+            <img
+              src="{{ url_for('static', filename='images/psu-logo.png') }}"
+              alt="Logo"
+              class="dashboard-logo"
+            />
+            </a>
     </div>
 </div>
 
@@ -38,20 +52,19 @@
     <form method="POST" action="{{ url_for('profile_update') }}">
         <div class="seller-form-box">
 
-            <!-- Read-only bank info -->
             <div style="display:flex; gap:8px;">
                 <input class="seller-input"
-                       placeholder="Bank Routing Number..."
-                       value="{{ seller['bank_routing_number'] or '' }}"
-                       disabled>
+                     name="bank_routing_number"
+                    placeholder="Bank Routing Number..."
+                    value="{{ seller['bank_routing_number'] or '' }}">
                 <input class="seller-input"
-                       placeholder="Bank Account Number..."
-                       value="{{ seller['bank_account_number'] or '' }}"
-                       disabled>
+                    name="bank_account_number"
+                     placeholder="Bank Account Number..."
+                     value="{{ seller['bank_account_number'] or '' }}">
                 <input class="seller-input"
                        placeholder="Balance..."
-                       value="${{ '%.2f'|format(seller['balance'] or 0) }}"
-                       disabled>
+                        value="${{ '%.2f'|format(seller['balance'] or 0) }}"
+                        disabled>
             </div>
 
             <!-- Read-only email -->
@@ -60,7 +73,6 @@
                    value="{{ seller['email'] }}"
                    disabled>
 
-            <!-- Only editable fields: password -->
             <input class="seller-input"
                    type="password"
                    name="new_password"

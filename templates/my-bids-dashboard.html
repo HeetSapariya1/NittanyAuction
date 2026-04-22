@@ -11,20 +11,25 @@
         <h1>My Bids</h1>
 
         <div class="header-buttons">
-            <button class="top-btn">Profile</button>
+            <button
+          class="top-btn"
+          onclick="window.location.href='{{ url_for('update_bidder_info') }}'"
+        >
+          Profile
+        </button>
             <button class="icon-btn">
                 <i class="fa-solid fa-bell"></i>
             </button>
-        <button class="top-btn" style="background-color: #d9534f; color: white; border: none;" onclick="window.location.href='{{ url_for('logout') }}'">
-          Logout
-        </button>
-        <a href="{{ url_for('bidder_dashboard') }}">
-        <img
-          src="{{ url_for('static', filename='images/psu-logo.png') }}"
-          alt="Logo"
-          class="dashboard-logo"
-        />
-        </a>
+            <button class="top-btn" style="background-color: #d9534f; color: white; border: none;" onclick="window.location.href='{{ url_for('logout') }}'">
+              Logout
+            </button>
+            <a href="{{ url_for('bidder_dashboard') }}">
+            <img
+              src="{{ url_for('static', filename='images/psu-logo.png') }}"
+              alt="Logo"
+              class="dashboard-logo"
+            />
+            </a>
         </div>
     </div>
 
@@ -49,7 +54,7 @@
                 </div>
                 </div>
                 <div class="next-page-row">
-                    <span>Next Page ➡</span>
+                    
                 </div>
             </div>
         </div>
