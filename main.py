@@ -78,13 +78,46 @@ def bidder_dashboard():
     if 'email' not in session or session.get('role') != 'bidder':
         return redirect(url_for("login"))
 
-    # load all categories from the database to populate the dropdown menu
+    selected_category = request.args.get("category", "").strip()
+    search_query = request.args.get("q", "").strip()
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
+
+    # Every category, flat, for the dropdown
+    cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
+
+    # Build the listings query dynamically so we can combine category + search
+    sql = """SELECT Seller_Email, Listing_ID, Auction_Title, Product_Name, Reserve_Price
+             FROM Auction_Listings
+             WHERE Status = 1"""
+    params = []
+    if selected_category:
+        sql += " AND Category = ?"
+        params.append(selected_category)
+    if search_query:
+        sql += """ AND (Auction_Title    LIKE ?
+                    OR Product_Name      LIKE ?
+                    OR Product_Description LIKE ?
+                    OR Category          LIKE ?
+                    OR Seller_Email      LIKE ?)"""
+        like = f"%{search_query}%"
+        params.extend([like, like, like, like, like])
+    sql += " ORDER BY Auction_Title LIMIT 60"
+
+    cursor.execute(sql, params)
+    products = cursor.fetchall()
     conn.close()
-    return render_template("bidder.html", categories=categories)
+
+    return render_template(
+        "bidder.html",
+        categories=categories,
+        products=products,
+        selected_category=selected_category,
+        search_query=search_query,
+    )
+
 
 
 @app.route("/profile/update", methods=["POST"])
