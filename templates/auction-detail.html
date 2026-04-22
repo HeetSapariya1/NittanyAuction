@@ -62,7 +62,19 @@
             <strong>Bids Remaining:</strong> {{ listing[7] }} / {{ listing[6] }}
           </p>
 
-          {% if listing[8] == 1 %} {% if last_bidder == current_user %}
+          {% if listing[0] == current_user %}
+          <div
+            style="
+              padding: 10px;
+              background: #f8d7da;
+              color: #721c24;
+              border-radius: 6px;
+              margin-bottom: 12px;
+            "
+          >
+            You cannot bid on your own listing.
+          </div>
+          {% elif listing[8] == 1 %} {% if last_bidder == current_user %}
           <!-- This warning stops the same user from bidding twice in a row. -->
           <div
             style="

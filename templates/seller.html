@@ -23,6 +23,11 @@
             <button class="top-btn" onclick="window.location.href='{{ url_for('sell_product_dashboard') }}'">
                 Sell Product
             </button>
+            {% if can_switch_to_bidder %}
+            <button class="top-btn" onclick="window.location.href='{{ url_for('switch_dashboard', target='bidder') }}'">
+                Bidder Dashboard
+            </button>
+            {% endif %}
             <button class="top-btn"
                     onclick="window.location.href='{{ url_for('update_seller_info') }}'"
             >Profile</button>

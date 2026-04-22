@@ -11,6 +11,7 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
     />
+  </head>
   <body>
     <!-- This top section shows the page title and the main navigation buttons. -->
     <div class="dashboard-header">
@@ -22,8 +23,15 @@
           onclick="window.location.href='{{ url_for('my_bids_dashboard') }}'"
         >
           Shopping Cart
-  </head>
         </button>
+        {% if can_switch_to_seller %}
+        <button
+          class="top-btn"
+          onclick="window.location.href='{{ url_for('switch_dashboard', target='seller') }}'"
+        >
+          Seller Dashboard
+        </button>
+        {% endif %}
         <button
           class="top-btn"
           onclick="window.location.href='{{ url_for('update_bidder_info') }}'"

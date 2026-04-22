@@ -14,6 +14,24 @@ def hash_password(plain: str) -> str:
     return hashlib.sha256(str(plain).encode()).hexdigest()
 
 
+def user_has_bidder_access(email):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM Bidders WHERE email = ?", (email,))
+    has_bidder = cursor.fetchone() is not None
+    conn.close()
+    return has_bidder
+
+
+def user_has_seller_access(email):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM Sellers WHERE email = ?", (email,))
+    has_seller = cursor.fetchone() is not None
+    conn.close()
+    return has_seller
+
+
 def build_seller_dashboard_redirect_args(premium="", status_filter="all", category_filter=""):
     redirect_args = {}
     if premium == "1":
@@ -115,6 +133,25 @@ def login():
     conn.close()
     return redirect(url_for("bidder_dashboard"))
 
+
+@app.route("/switch-dashboard/<target>")
+def switch_dashboard(target):
+    if 'email' not in session:
+        return redirect(url_for("login"))
+
+    email = session['email']
+    target = target.strip().lower()
+
+    if target == "bidder" and user_has_bidder_access(email):
+        session['role'] = 'bidder'
+        return redirect(url_for("bidder_dashboard"))
+
+    if target == "seller" and user_has_seller_access(email):
+        session['role'] = 'seller'
+        return redirect(url_for("seller_dashboard"))
+
+    return redirect(url_for("login"))
+
 @app.route("/logout")
 def logout():
     session.clear()
@@ -148,8 +185,8 @@ def bidder_dashboard():
     # Build the listings query dynamically so we can combine category + search
     sql = """SELECT Seller_Email, Listing_ID, Auction_Title, Product_Name, Reserve_Price
              FROM Auction_Listings
-             WHERE Status = 1"""
-    params = []
+             WHERE Status = 1 AND Seller_Email != ?"""
+    params = [email]
     if not is_premium:
         sql += " AND (Premium_Item = 0 OR Premium_Item IS NULL)"
     if selected_category:
@@ -178,7 +215,8 @@ def bidder_dashboard():
         selected_category=selected_category,
         search_query=search_query,
         premium_only=premium_only,
-        is_premium=is_premium
+        is_premium=is_premium,
+        can_switch_to_seller=user_has_seller_access(email)
     )
 
 
@@ -309,7 +347,8 @@ def seller_dashboard():
         update_error=request.args.get("update_error", "").strip(),
         update_success=request.args.get("update_success", "").strip(),
         edit_listing_id=request.args.get("edit_listing_id", "").strip(),
-        avg_rating = avg_rating
+        avg_rating=avg_rating,
+        can_switch_to_bidder=user_has_bidder_access(session['email'])
     )
 
 
@@ -616,12 +655,12 @@ def register():
 
     # Log them in
     session['email'] = email
-    session['role'] = "Seller" if role in ["Seller", "LocalVendor"] else "Bidder"
+    session['role'] = "seller" if role in ["Seller", "LocalVendor"] else "bidder"
 
     flash("Registration successful! Welcome to Nittany Auction.", "success")
 
     # redirect based on correct role
-    if session['role'] == "Bidder":
+    if session['role'] == "bidder":
         return redirect(url_for("bidder_dashboard"))
     else:
         return redirect(url_for("seller_dashboard"))
@@ -894,6 +933,9 @@ def place_bid():
         return redirect(url_for("auction_detail",
             seller_email=seller_email, listing_id=listing_id,
             feedback=msg, type="error"))
+
+    if seller_email == bidder_email:
+        return reject("You cannot bid on your own listing.")
 
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
