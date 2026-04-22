@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3
 import os
 import hashlib  # 1. Added the hashlib library
 
 app = Flask(__name__)
+app.secret_key = 'nittany_auction_secret'
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_path = os.path.join(BASE_DIR, "database_population/nittany_auction.db")
@@ -37,33 +38,45 @@ def login():
         conn.close()
         return render_template("login.html", error="Invalid email or password")
 
+    session['email'] = email
+
     cursor.execute("SELECT email FROM Helpdesk WHERE email = ?", (email,))
     if cursor.fetchone():
+        session['role'] = 'helpdesk'
         conn.close()
         return redirect(url_for("helpdesk_dashboard"))
 
     cursor.execute("SELECT email FROM Sellers WHERE email = ?", (email,))
     if cursor.fetchone():
+        session['role'] = 'seller'
         conn.close()
         return redirect(url_for("seller_dashboard"))
 
     cursor.execute("SELECT email FROM Local_Vendors WHERE email = ?", (email,))
     if cursor.fetchone():
+        session['role'] = 'seller'
         conn.close()
         return redirect(url_for("seller_dashboard"))
 
     cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
     if cursor.fetchone():
+        session['role'] = 'bidder'
         conn.close()
         return redirect(url_for("bidder_dashboard"))
     
     conn.close()
     return redirect(url_for("bidder_dashboard"))
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
 @app.route("/bidder")
 # refreshes the bidder dashboard with the category the user clicked on, or Root if they just logged in.
 def bidder_dashboard():
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
     current_category = request.args.get("category", "Root")
 
     conn = sqlite3.connect(db_path)
@@ -97,12 +110,12 @@ def bidder_dashboard():
     )
 
 
-@app.route("/profile/update", methods=["Get", "POST"])
+@app.route("/profile/update", methods=["POST"])
 def profile_update():
-    email = request.form.get('email', '').strip()
-
-    if not email:
+    if 'email' not in session:
         return redirect(url_for("login"))
+
+    email = session['email']  # always from session, never from form
 
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
@@ -111,30 +124,36 @@ def profile_update():
     new_password = request.form.get('new_password', '').strip()
     confirm_pass = request.form.get('confirm_password', '').strip()
 
-    # Check role by querying the DB
     cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
-    if cursor.fetchone():
-        cursor.execute('''
-            UPDATE Bidders
-            SET first_name = ?, last_name = ?, age = ?, phone_number = ?, major = ?
-            WHERE email = ?
-        ''', (
-            request.form.get('first_name', '').strip(),
-            request.form.get('last_name', '').strip(),
-            request.form.get('age', '').strip() or None,
-            request.form.get('phone_number', '').strip(),
-            request.form.get('major', '').strip(),
+    is_bidder = cursor.fetchone()
+
+    if is_bidder:
+        cursor.execute("""
+                UPDATE Bidders
+                SET first_name = ?,
+                    last_name  = ?,
+                    age        = ?,
+                    phone_number = ?,
+                    major      = ?
+                WHERE email = ?
+            """, (
+            request.form.get("first_name"),
+            request.form.get("last_name"),
+            request.form.get("age") or None,
+            request.form.get("phone_number"),
+            request.form.get("major"),
             email
         ))
         redirect_to = "bidder_dashboard"
+
     else:
-        # Must be a seller — only password is updatable
+        # Seller — only password is updatable
         redirect_to = "seller_dashboard"
 
     if new_password:
         if new_password != confirm_pass:
             conn.close()
-            return redirect(url_for(redirect_to, error="Passwords do not match"))
+            return redirect(url_for(redirect_to))
         cursor.execute(
             "UPDATE Users SET password = ? WHERE email = ?",
             (hash_password(new_password), email)
@@ -146,11 +165,15 @@ def profile_update():
 
 @app.route("/seller")
 def seller_dashboard():
+    if 'email' not in session or session.get('role') != 'seller':
+        return redirect(url_for("login"))
     return render_template("seller.html")
 
 
 @app.route("/helpdesk")
 def helpdesk_dashboard():
+    if 'email' not in session or session.get('role') != 'helpdesk':
+        return redirect(url_for("login"))
     return render_template("helpdesk.html")
 
 
@@ -179,10 +202,52 @@ def my_bids_dashboard():
 
 @app.route("/update-bidder-info")
 def update_bidder_info():
-    return render_template("Update-bidder-info.html")
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    email = session['email']
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM Bidders WHERE email = ?", (email,))
+    bidder = cursor.fetchone()
+
+    cursor.execute(
+        "SELECT * FROM Credit_Cards WHERE Owner_email = ? LIMIT 1",
+        (email,)
+    )
+    card = cursor.fetchone()
+
+    conn.close()
+
+    if not bidder:
+        return redirect(url_for("login"))
+
+    return render_template("Update-bidder-info.html", bidder=bidder, card=card)
 
 @app.route("/update-seller-info")
 def update_seller_info():
+    if 'email' not in session or session.get('role') != 'seller':
+        return redirect(url_for("login"))
+
+    email = session['email']
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM Sellers WHERE email = ?", (email,))
+    seller = cursor.fetchone()
+
+    conn.close()
+
+    if not seller:
+        return redirect(url_for("login"))
     return render_template("Update-seller-info.html")
+
 if __name__ == "__main__":
     app.run(debug=True)
