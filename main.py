@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, flash, render_template, request, redirect, url_for, session
 import sqlite3
 import os
 import hashlib  # 1. Added the hashlib library
@@ -70,6 +70,7 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
+    flash("You have been successfully logged out.", "info")
     return redirect(url_for("login"))
 
 @app.route("/bidder")
@@ -164,14 +165,94 @@ def helpdesk_dashboard():
 def register():
     return render_template("register.html")
 
-@app.route("/sell-product-dashboard")
+@app.route("/sell-product-dashboard", methods=["GET", "POST"])
 def sell_product_dashboard():
     if 'email' not in session or session.get('role') != 'seller':
         return redirect(url_for("login"))
 
-    # load all categories from the database to populate the dropdown menu in the sell product dashboard
     conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
+
+    if request.method == "POST":
+        auction_title = request.form.get("auction_title", "").strip()
+        product_name = request.form.get("product_name", "").strip()
+        product_description = request.form.get("product_description", "").strip()
+        reserve_price_raw = request.form.get("reserve_price", "").strip()
+        max_bids_raw = request.form.get("max_bids", "").strip()
+        quantity_raw = request.form.get("quantity", "").strip()
+        category = request.form.get("category", "").strip()
+
+        error = None
+
+        if not auction_title or not product_name or not reserve_price_raw or not max_bids_raw or not category:
+            error = "Please fill in all required fields."
+        else:
+            try:
+                reserve_price = float(reserve_price_raw.replace("$", "").replace(",", ""))
+                max_bids = int(max_bids_raw)
+                quantity = int(quantity_raw) if quantity_raw else 1
+                if reserve_price < 0 or max_bids < 1 or quantity < 1:
+                    error = "Reserve price must be 0 or more, and quantity/max bids must be at least 1."
+            except ValueError:
+                error = "Reserve price, quantity, and max bids must be valid numbers."
+
+        if error is None:
+            cursor.execute(
+                "SELECT 1 FROM Categories WHERE category_name = ?",
+                (category,)
+            )
+            if cursor.fetchone() is None:
+                error = "Please select a valid category."
+
+        if error is None:
+            cursor.execute(
+                """SELECT COALESCE(MAX(Listing_ID), 0) + 1
+                   FROM Auction_Listings
+                   WHERE Seller_Email = ?""",
+                (session['email'],)
+            )
+            next_listing_id = cursor.fetchone()[0]
+
+            cursor.execute(
+                """INSERT INTO Auction_Listings (
+                       Seller_Email, Listing_ID, Category, Auction_Title,
+                       Product_Name, Product_Description, Quantity,
+                       Reserve_Price, Max_Bids, Status
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                (
+                    session['email'],
+                    next_listing_id,
+                    category,
+                    auction_title,
+                    product_name,
+                    product_description or None,
+                    quantity,
+                    reserve_price,
+                    max_bids,
+                )
+            )
+            conn.commit()
+
+            cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+            categories = [{"category_name": row[0]} for row in cursor.fetchall()]
+            conn.close()
+            return render_template(
+                "sell-product-dashboard.html",
+                categories=categories,
+                success="Product listed successfully."
+            )
+
+        cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+        categories = [{"category_name": row[0]} for row in cursor.fetchall()]
+        conn.close()
+        return render_template(
+            "sell-product-dashboard.html",
+            categories=categories,
+            error=error
+        )
+
+    # load all categories from the database to populate the dropdown menu in the sell product dashboard
     cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
     conn.close()
@@ -234,12 +315,6 @@ def update_seller_info():
     if not seller:
         return redirect(url_for("login"))
     return render_template("Update-seller-info.html")
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    flash("You have been successfully logged out.", "info")
-    return redirect(url_for("login"))
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -111,6 +111,50 @@ with open("dataset/Categories.csv", "r", encoding="utf-8-sig") as file:
         name   = row[1].strip()
         cur.execute("INSERT INTO Categories (category_name, parent_category) VALUES (?, ?)",(name, parent))
 
+with open("dataset/Auction_Listings.csv", "r", encoding="utf-8-sig") as file:
+    reader = csv.DictReader(file)
+    for row in reader:
+        seller_email = row["Seller_Email"].strip()
+        listing_id = int(row["Listing_ID"].strip())
+        category = row["Category"].strip()
+        auction_title = row["Auction_Title"].strip()
+        product_name = row["Product_Name"].strip()
+        product_description = row["Product_Description"].strip() or None
+        quantity = int(row["Quantity"].strip()) if row["Quantity"].strip() else 1
+
+        # CSV stores prices with formatting like "$50 " or "5,500".
+        reserve_price = float(
+            row["Reserve_Price"].replace("$", "").replace(",", "").strip()
+        )
+        max_bids = int(row["Max_bids"].strip())
+        status = int(row["Status"].strip()) if row["Status"].strip() else 1
+
+        cur.execute("""
+            INSERT INTO Auction_Listings (
+                Seller_Email,
+                Listing_ID,
+                Category,
+                Auction_Title,
+                Product_Name,
+                Product_Description,
+                Quantity,
+                Reserve_Price,
+                Max_Bids,
+                Status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            seller_email,
+            listing_id,
+            category,
+            auction_title,
+            product_name,
+            product_description,
+            quantity,
+            reserve_price,
+            max_bids,
+            status
+        ))
+
 conn.commit()
 
 conn.close()
