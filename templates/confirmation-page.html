@@ -71,7 +71,6 @@
 <body>
 
 <!-- HEADER -->
-<!-- This top area keeps the same navigation style as the other pages. -->
 <div class="dashboard-header">
     <h1>Confirmation Page</h1>
     <div class="header-buttons">
@@ -95,7 +94,6 @@
     </div>
 
     <div class="confirm-box">
-        <!-- This message tells the buyer their order flow is complete. -->
         <p>
             THANK YOU!<br><br>
             The seller is getting started on your order right away. In the
@@ -105,17 +103,17 @@
     </div>
 
     <form method="POST" action="{{ url_for('submit_rating') }}">
-        <!-- The hidden inputs store values we still need when the rating form is submitted. -->
-        <input type="hidden" name="seller_email" value="{{ seller_email }}">
-        <input type="hidden" name="rating" id="rating-value" value="0">
+    <input type="hidden" name="seller_email" value="{{ seller_email }}">
+    <input type="hidden" name="listing_id" value="{{ listing_id }}">
 
-        <div class="stars-row">
-            {% for i in range(1, 6) %}
-                <span class="star" data-value="{{ i }}"
-                      onclick="setRating({{ i }})">★</span>
-            {% endfor %}
-            <button type="submit" class="submit-btn">Submit</button>
-        </div>
+    <div class="stars-row">
+        <label><input type="radio" name="rating" value="1" required> 1</label>
+        <label><input type="radio" name="rating" value="2"> 2</label>
+        <label><input type="radio" name="rating" value="3"> 3</label>
+        <label><input type="radio" name="rating" value="4"> 4</label>
+        <label><input type="radio" name="rating" value="5"> 5</label>
+        <button type="submit" class="submit-btn">Submit</button>
+    </div>
     </form>
 
 </div>

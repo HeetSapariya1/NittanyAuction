@@ -290,6 +290,13 @@ def seller_dashboard():
     cursor.execute(sql, params)
     seller_listings = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT COALESCE(AVG(Rating),0)
+        FROM Ratings
+        WHERE Seller_Email = ?
+    """, (session['email'],))
+
+    avg_rating = cursor.fetchone()[0]
     conn.close()
     return render_template(
         "seller.html",
@@ -302,6 +309,7 @@ def seller_dashboard():
         update_error=request.args.get("update_error", "").strip(),
         update_success=request.args.get("update_success", "").strip(),
         edit_listing_id=request.args.get("edit_listing_id", "").strip()
+        avg_rating = avg_rating
     )
 
 
@@ -849,7 +857,7 @@ def payment(seller_email, listing_id):
 
         conn.commit()
         conn.close()
-        return redirect(url_for("confirmation_page", seller_email=seller_email))
+        return redirect(url_for("confirmation_page", seller_email=seller_email, listing_id = listing_id))
 
     conn.close()
     return render_template("payment.html",
@@ -867,17 +875,6 @@ def confirmation_page():
     seller_email = request.args.get("seller_email", "")
     return render_template("confirmation-page.html", seller_email=seller_email)
 
-@app.route("/submit-rating", methods=["POST"])
-def submit_rating():
-    if 'email' not in session or session.get('role') != 'bidder':
-        return redirect(url_for("login"))
-
-    seller_email = request.form.get("seller_email", "")
-    rating = request.form.get("rating", "0")
-
-    # save rating to DB
-
-    return redirect(url_for("bidder_dashboard"))
 
 @app.route("/place-bid", methods=["POST"])
 def place_bid():
@@ -926,6 +923,10 @@ def place_bid():
     if bid_price < highest_bid + 1.0:
         conn.close()
         return reject(f"Bid too low. Minimum bid is ${highest_bid + 1.0:.2f}.")
+
+    if bid_price > highest_bid + 2000.0:
+        conn.close()
+        return reject(f"Bid too high. Maximum bid is ${highest_bid + 2000.0:.2f}.")
 
     # Rule 3: no consecutive bids
     cursor.execute("""
@@ -1036,7 +1037,51 @@ def update_seller_info():
 
         return render_template("Update-seller-info.html", seller=seller)
 
+@app.route("/submit_rating", methods=["POST"])
+def submit_rating():
+    if 'email' not in session:
+        return redirect(url_for("login"))
 
+    bidder = session['email']
+    seller = request.form.get("seller_email")
+    listing = request.form.get("listing_id")
+    rating = int(request.form.get("rating"))
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # ensure transaction exists
+    cursor.execute("""
+        SELECT *
+        FROM Transactions
+        WHERE Seller_Email=? AND Listing_ID=? AND Buyer_Email=?
+    """, (seller, listing, bidder))
+
+    if not cursor.fetchone():
+        conn.close()
+        return redirect(url_for("bidder_dashboard"))
+
+    # prevent duplicate rating
+    cursor.execute("""
+        SELECT *
+        FROM Ratings
+        WHERE Bidder_email=? AND Seller_Email=? AND Listing_ID=?
+    """, (bidder, seller, listing))
+
+    if cursor.fetchone():
+        conn.close()
+        return redirect(url_for("bidder_dashboard"))
+
+    # insert rating
+    cursor.execute("""
+        INSERT INTO Ratings (Bidder_email, Seller_Email, Listing_ID, Rating)
+        VALUES (?, ?, ?, ?)
+    """, (bidder, seller, listing, rating))
+
+
+    conn.commit()
+    conn.close()
+    return redirect(url_for("bidder_dashboard"))
 
 if __name__ == "__main__":
     app.run(debug=True)
