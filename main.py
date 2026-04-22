@@ -835,6 +835,16 @@ def auction_detail(seller_email, listing_id):
     last_row = cursor.fetchone()
     last_bidder = last_row[0] if last_row else None
 
+    # Fetch seller's average rating and total number of ratings
+    cursor.execute("""
+        SELECT ROUND(AVG(Rating), 1), COUNT(*)
+        FROM Ratings
+        WHERE Seller_email = ?
+    """, (seller_email,))
+    rating_row = cursor.fetchone()
+    avg_rating = rating_row[0]   # None if no ratings yet
+    rating_count = rating_row[1]
+
     conn.close()
 
     if listing is None:
@@ -850,7 +860,9 @@ def auction_detail(seller_email, listing_id):
         last_bidder=last_bidder,
         feedback=feedback,
         feedback_type=feedback_type,
-        current_user=session['email']
+        current_user=session['email'],
+        avg_rating=avg_rating,
+        rating_count=rating_count
     )
 
 @app.route("/payment/<seller_email>/<int:listing_id>", methods=["GET", "POST"])

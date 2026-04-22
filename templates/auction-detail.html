@@ -52,6 +52,14 @@
           <p><strong>Description:</strong> {{ listing[4] or "N/A" }}</p>
           <p><strong>Category:</strong> {{ listing[9] }}</p>
           <p>
+            <strong>Seller Rating:</strong>
+            {% if avg_rating %}
+              {{ avg_rating }} / 5 &nbsp;({{ rating_count }} review{{ 's' if rating_count != 1 else '' }})
+            {% else %}
+              No ratings yet
+            {% endif %}
+          </p>
+          <p>
             <strong>Reserve Price:</strong> ${{ "%.2f"|format(listing[5]) }}
           </p>
           <p>
