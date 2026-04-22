@@ -80,6 +80,7 @@ def bidder_dashboard():
 
     selected_category = request.args.get("category", "").strip()
     search_query = request.args.get("q", "").strip()
+    premium_only = request.args.get("premium") == "1"
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -96,6 +97,8 @@ def bidder_dashboard():
     if selected_category:
         sql += " AND Category = ?"
         params.append(selected_category)
+    if premium_only:
+        sql += " AND Premium_Item = 1"
     if search_query:
         sql += """ AND (Auction_Title    LIKE ?
                     OR Product_Name      LIKE ?
@@ -116,6 +119,7 @@ def bidder_dashboard():
         products=products,
         selected_category=selected_category,
         search_query=search_query,
+        premium_only=premium_only,
     )
 
 

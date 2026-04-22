@@ -63,6 +63,9 @@
         <form method="GET" action="{{ url_for('bidder_dashboard') }}">
           {# keep the active search term when the user changes category #}
           <input type="hidden" name="q" value="{{ search_query or '' }}" />
+          {% if premium_only %}
+          <input type="hidden" name="premium" value="1" />
+          {% endif %}
           <select name="category" class="seller-input" onchange="this.form.submit()">
             <option value="" {% if not selected_category %}selected{% endif %}>All Categories</option>
             {% for c in categories %}
@@ -73,12 +76,28 @@
             {% endfor %}
           </select>
         </form>
+        <div class="sidebar-spacer"></div>
+        {% if premium_only %}
+        <a class="category-btn premium-filter-btn"
+           href="{{ url_for('bidder_dashboard', category=selected_category or None, q=search_query or None) }}">
+          Show All Listings
+        </a>
+        <div class="sidebar-empty">Premium filter is on</div>
+        {% else %}
+        <a class="category-btn premium-filter-btn"
+           href="{{ url_for('bidder_dashboard', premium='1', category=selected_category or None, q=search_query or None) }}">
+          Premium Items Only
+        </a>
+        {% endif %}
       </div>
 
       <div class="dashboard-content">
         <form method="GET" action="{{ url_for('bidder_dashboard') }}">
           {# keep the active category when the user searches #}
           <input type="hidden" name="category" value="{{ selected_category or '' }}" />
+          {% if premium_only %}
+          <input type="hidden" name="premium" value="1" />
+          {% endif %}
           <input
             type="text"
             name="q"
