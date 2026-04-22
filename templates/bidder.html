@@ -95,9 +95,14 @@
             Product_Name, Reserve_Price). #} {% for p in products %}
             <div class="product-card">
               <strong>{{ p[2] }}</strong><br />
-              {# Auction_Title #} {{ p[3] }}<br />
-              {# Product_Name #} Reserve: ${{ "%.2f"|format(p[4]) }} {#
-              Reserve_Price #}
+              {{ p[3] }}<br />
+              Reserve: ${{ "%.2f"|format(p[4]) }}<br />
+              <form method="POST" action="{{ url_for('place_bid') }}" style="margin-top:8px;">
+                <input type="hidden" name="seller_email" value="{{ p[0] }}">
+                <input type="hidden" name="listing_id"   value="{{ p[1] }}">
+                <input type="number" step="0.01" name="bid_price" placeholder="Your bid" required style="width:90px;">
+                <button type="submit">Place Bid</button>
+              </form>
             </div>
             {% else %}
             <div class="product-card">No products in this category yet.</div>

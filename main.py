@@ -382,9 +382,50 @@ def sell_product_dashboard():
 def temporary_dashboard():
     return render_template("temp-dashboard.html")
 
+@app.route("/place-bid", methods=["POST"])
+def place_bid():
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    seller_email = request.form.get("seller_email", "").strip()
+    listing_id   = request.form.get("listing_id", "").strip()
+    try:
+        bid_price = float(request.form.get("bid_price", "").strip())
+    except ValueError:
+        return redirect(url_for("bidder_dashboard"))
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO Bids (Seller_Email, Listing_ID, Bidder_Email, Bid_Price) "
+        "VALUES (?, ?, ?, ?)",
+        (seller_email, listing_id, session['email'], bid_price)
+    )
+    conn.commit()
+    conn.close()
+    return redirect(url_for("my_bids_dashboard"))
+
 @app.route("/my-bids-dashboard")
 def my_bids_dashboard():
-    return render_template("my-bids-dashboard.html")
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT AL.Auction_Title, B.Seller_Email, B.Bid_Price
+             FROM Bids B
+             JOIN Auction_Listings AL
+               ON AL.Seller_Email = B.Seller_Email
+              AND AL.Listing_ID   = B.Listing_ID
+            WHERE B.Bidder_Email = ?
+            ORDER BY B.Bid_ID DESC""",
+        (session['email'],)
+    )
+    my_bids = cursor.fetchall()
+    conn.close()
+    return render_template("my-bids-dashboard.html", my_bids=my_bids)
 
 @app.route("/update-bidder-info")
 def update_bidder_info():
