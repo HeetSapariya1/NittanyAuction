@@ -68,11 +68,12 @@
         </div>
 
         <div class="dashboard-content">
-          <input
-            type="text"
-            class="search-box"
-            placeholder="Search products..."
-          />
+          <form method="GET" action="{{ url_for('bidder_dashboard') }}">
+            <input type="text"
+              name="q"
+              class="search-box"
+              placeholder="Search products...">
+          </form>
 
           <div class="product-grid">
             {# Each row from the Auction_Listings query. Column order matches
