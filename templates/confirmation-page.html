@@ -82,8 +82,10 @@
                 onclick="window.location.href='{{ url_for('update_bidder_info') }}'">
             Profile
         </button>
+        <a href="{{ url_for('bidder_dashboard') }}">
         <img src="{{ url_for('static', filename='images/psu-logo.png') }}"
              alt="Logo" class="dashboard-logo">
+            </a>
     </div>
 </div>
 
