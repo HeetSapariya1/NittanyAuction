@@ -92,7 +92,8 @@ def profile_update():
     if 'email' not in session:
         return redirect(url_for("login"))
 
-    email = session['email']  # always from session, never from form
+    email = session['email']
+    role  = session.get('role')
 
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
@@ -101,17 +102,14 @@ def profile_update():
     new_password = request.form.get('new_password', '').strip()
     confirm_pass = request.form.get('confirm_password', '').strip()
 
-    cursor.execute("SELECT email FROM Bidders WHERE email = ?", (email,))
-    is_bidder = cursor.fetchone()
-
-    if is_bidder:
+    if role == 'bidder':
         cursor.execute("""
                 UPDATE Bidders
-                SET first_name = ?,
-                    last_name  = ?,
-                    age        = ?,
+                SET first_name   = ?,
+                    last_name    = ?,
+                    age          = ?,
                     phone_number = ?,
-                    major      = ?
+                    major        = ?
                 WHERE email = ?
             """, (
             request.form.get("first_name"),
@@ -121,16 +119,15 @@ def profile_update():
             request.form.get("major"),
             email
         ))
-        redirect_to = "bidder_dashboard"
+        redirect_to = "update_bidder_info"
 
-    else:
-        # Seller — only password is updatable
-        redirect_to = "seller_dashboard"
+    elif role == 'seller':
+        redirect_to = "update_seller_info"
 
     if new_password:
         if new_password != confirm_pass:
             conn.close()
-            return redirect(url_for(redirect_to))
+            return redirect(url_for(redirect_to) + "?error=Passwords+do+not+match")
         cursor.execute(
             "UPDATE Users SET password = ? WHERE email = ?",
             (hash_password(new_password), email)
@@ -297,24 +294,25 @@ def update_bidder_info():
 
 @app.route("/update-seller-info")
 def update_seller_info():
-    if 'email' not in session or session.get('role') != 'seller':
-        return redirect(url_for("login"))
+        if 'email' not in session or session.get('role') != 'seller':
+            return redirect(url_for("login"))
 
-    email = session['email']
+        email = session['email']
 
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    cursor = conn.cursor()
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM Sellers WHERE email = ?", (email,))
-    seller = cursor.fetchone()
+        cursor.execute("SELECT * FROM Sellers WHERE email = ?", (email,))
+        seller = cursor.fetchone()
 
-    conn.close()
+        conn.close()
 
-    if not seller:
-        return redirect(url_for("login"))
-    return render_template("Update-seller-info.html")
+        if not seller:
+            return redirect(url_for("login"))
+
+        return render_template("Update-seller-info.html", seller=seller)
 
 if __name__ == "__main__":
     app.run(debug=True)

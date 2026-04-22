@@ -3,67 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <title>Bidder Profile Dashboard</title>
-
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
 <!-- HEADER -->
 <div class="seller-header">
     <h1>Bidder Profile Dashboard</h1>
-
     <div class="seller-header-right">
         <button class="seller-top-btn"
                 onclick="window.location.href='{{ url_for('update_seller_info') }}'">
             Become a Seller
         </button>
-
         <img src="{{ url_for('static', filename='images/psu-logo.png') }}"
-             class="seller-logo"
-             alt="Logo">
+             class="seller-logo" alt="Logo">
     </div>
 </div>
 
 <!-- MAIN WRAPPER -->
 <div class="seller-wrapper">
 
-    <!-- WATERMARK -->
     <div class="seller-watermark">
         <img src="{{ url_for('static', filename='images/Penn-State-University-Seal-Logo.png') }}"
              alt="Watermark">
     </div>
 
-    <h2 style="margin-left:6%; font-weight: normal;">Hello User!</h2>
+    <h2 style="margin-left:6%; font-weight:normal;">
+        Hello {{ bidder['first_name'] or 'User' }}!
+    </h2>
 
-    <!-- FORM BOX -->
-    <div class="seller-form-box">
+    <form method="POST" action="{{ url_for('profile_update') }}">
+        <div class="seller-form-box">
 
-        <!-- Top Row -->
-        <div style="display:flex; gap:8px;">
-            <input class="seller-input" placeholder="Credit Card Number..." />
-            <input class="seller-input" placeholder="Type..." />
-            <input class="seller-input" placeholder="Exp Date..." />
+            <!-- Credit card info — read only, just for display -->
+            <div style="display:flex; gap:8px;">
+                <input class="seller-input"
+                       placeholder="Credit Card Number..."
+                       value="{{ card['credit_card_num'] if card else '' }}"
+                       disabled>
+                <input class="seller-input"
+                       placeholder="Type..."
+                       value="{{ card['card_type'] if card else '' }}"
+                       disabled>
+                <input class="seller-input"
+                       placeholder="Exp Date..."
+                       value="{{ (card['expire_month']|string + '/' + card['expire_year']|string) if card else '' }}"
+                       disabled>
+            </div>
+
+            <!-- Editable fields — name attribute is what Python reads -->
+            <input class="seller-input"
+                   name="major"
+                   placeholder="Major..."
+                   value="{{ bidder['major'] or '' }}">
+
+            <input class="seller-input"
+                   name="age"
+                   type="number"
+                   placeholder="Age..."
+                   value="{{ bidder['age'] or '' }}">
+
+            <input class="seller-input"
+                   name="phone_number"
+                   placeholder="Phone Number..."
+                   value="{{ bidder['phone_number'] or '' }}">
+
+            <input class="seller-input"
+                   name="first_name"
+                   placeholder="First Name..."
+                   value="{{ bidder['first_name'] or '' }}">
+
+            <input class="seller-input"
+                   name="last_name"
+                   placeholder="Last Name..."
+                   value="{{ bidder['last_name'] or '' }}">
+
+            <!-- Email — read only, cannot be changed directly -->
+            <input class="seller-input"
+                   placeholder="Email..."
+                   value="{{ bidder['email'] }}"
+                   disabled>
+
+            <!-- Password -->
+            <input class="seller-input"
+                   type="password"
+                   name="new_password"
+                   placeholder="New Password (leave blank to keep current)">
+
+            <input class="seller-input"
+                   type="password"
+                   name="confirm_password"
+                   placeholder="Confirm Password">
+
         </div>
 
-        <input class="seller-input" placeholder="Major..." />
-        <input class="seller-input" placeholder="Age..." />
-        <input class="seller-input" placeholder="Annual Income..." />
-        <input class="seller-input" placeholder="Update Email..." />
+        <!-- BUTTONS -->
+        <div class="seller-bottom-row">
+            <button type="button" class="seller-list-btn"
+                    onclick="alert('Please contact HelpDesk to delete your account.')">
+                Delete Profile
+            </button>
+            <button type="submit" class="seller-list-btn">Save Profile</button>
+            <label class="premium-label">
+                <input type="checkbox" class="premium-check"> Premium User
+            </label>
+        </div>
 
-    </div>
-
-    <!-- BUTTONS -->
-    <div class="seller-bottom-row">
-        <button class="seller-list-btn">Delete Profile</button>
-        <button class="seller-list-btn">Save Profile</button>
-
-        <label class="premium-label">
-            <input type="checkbox" class="premium-check">
-            Premium User
-        </label>
-    </div>
-
+    </form>
 </div>
 
 </body>
