@@ -7,7 +7,6 @@
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="seller-header">
     <h1>Bidder Profile Dashboard</h1>
     <div class="seller-header-right">
@@ -34,7 +33,6 @@
     </div>
 </div>
 
-<!-- MAIN WRAPPER -->
 <div class="seller-wrapper">
 
     <div class="seller-watermark">
@@ -50,6 +48,7 @@
         <div class="seller-form-box">
 
             <!-- Credit card info — read only, just for display -->
+            <!-- These disabled inputs show saved card info without letting the user edit it here. -->
             <div style="display:flex; gap:8px;">
                 <input class="seller-input"
                        placeholder="Credit Card Number..."
@@ -65,7 +64,8 @@
                        disabled>
             </div>
 
-            <!-- Editable fields — name attribute is what Python reads -->
+            <!-- Editable fields, name attribute is what Python reads -->
+            <!-- These inputs are the editable bidder profile fields that get posted back to Flask. -->
             <input class="seller-input"
                    name="major"
                    placeholder="Major..."
@@ -92,7 +92,7 @@
                    placeholder="Last Name..."
                    value="{{ bidder['last_name'] or '' }}">
 
-            <!-- Email — read only, cannot be changed directly -->
+            <!-- Email, read only, cannot be changed directly -->
             <input class="seller-input"
                    placeholder="Email..."
                    value="{{ bidder['email'] }}"
@@ -111,8 +111,8 @@
 
         </div>
 
-        <!-- BUTTONS -->
         <div class="seller-bottom-row">
+            <!-- This row holds the save button, delete button, and premium checkbox. -->
             <button type="button" class="seller-list-btn"
                     onclick="alert('Please contact HelpDesk to delete your account.')">
                 Delete Profile

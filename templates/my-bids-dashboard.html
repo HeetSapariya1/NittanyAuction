@@ -41,6 +41,7 @@
 
 
             <div class="dashboard-content">
+                <!-- This loop lists every bid the current user has placed. -->
                 <div class="product-grid">
                     {% for b in my_bids %}
                     <div class="product-card">
@@ -49,6 +50,7 @@
                         Your bid: ${{ "%.2f"|format(b[2]) }}
                     </div>
                     {% else %}
+                    <!-- This message appears when the user has not bid on anything yet. -->
                     <div class="product-card">You haven't placed any bids yet.</div>
                     {% endfor %}
                 </div>

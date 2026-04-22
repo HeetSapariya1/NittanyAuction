@@ -11,8 +11,10 @@
     </div>
 
     <div class="hero">
+        <!-- This image fills the background behind the login form. -->
         <img src="{{ url_for('static', filename='images/nittanylion.jpg') }}" class="bg-img" alt="Nittany Lion">
 
+        <!-- The form sends the user's email and password to the Flask route. -->
         <form class="overlay" method="POST" action="/">
             <h2>Login</h2>
 
@@ -24,6 +26,7 @@
             <input type="password" name="password" placeholder="Password" required>
 
             <button type="submit">Login</button>
+            <!-- This second button sends new users to the registration page. -->
             <button type="button" onclick="window.location.href='{{ url_for('register') }}'">
                 Create Account
             </button>
