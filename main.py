@@ -1188,25 +1188,25 @@ def submit_rating():
     rating_desc = rating_desc_map.get(rating, "Okay")
     rating_date = datetime.now(timezone.utc).date().isoformat()
 
-    # update an existing rating for this seller, or insert a new one
+    # update an existing rating for this listing, or insert a new one
     cursor.execute("""
         SELECT 1
         FROM Ratings
-        WHERE Bidder_email=? AND Seller_Email=?
-    """, (bidder, seller))
+        WHERE Bidder_email=? AND Seller_Email=? AND Listing_ID=?
+    """, (bidder, seller, listing))
 
     if cursor.fetchone():
         cursor.execute("""
             UPDATE Ratings
             SET Date = ?, Rating = ?, Rating_Desc = ?
-            WHERE Bidder_email = ? AND Seller_Email = ?
-        """, (rating_date, rating, rating_desc, bidder, seller))
+            WHERE Bidder_email = ? AND Seller_Email = ? AND Listing_ID = ?
+        """, (rating_date, rating, rating_desc, bidder, seller, listing))
         feedback = "Your rating was updated."
     else:
         cursor.execute("""
-            INSERT INTO Ratings (Bidder_email, Seller_Email, Date, Rating, Rating_Desc)
-            VALUES (?, ?, ?, ?, ?)
-        """, (bidder, seller, rating_date, rating, rating_desc))
+            INSERT INTO Ratings (Bidder_email, Seller_Email, Listing_ID, Date, Rating, Rating_Desc)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (bidder, seller, listing, rating_date, rating, rating_desc))
         feedback = "Thanks for rating this seller."
 
     conn.commit()
