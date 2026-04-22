@@ -3,22 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <title>NittanyAuction Register</title>
-    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<div class="header">
-    <h1>NittanyAuction - Bidder Register</h1>
-</div>
-
-<div class="hero">
-    <img src="../static/images/nittanylion.jpg" class="bg-img">
-    <div class="overlay">
-        <h2>Create Account</h2>
-        <input type="text" placeholder="Full Name" required>
-        <input type="email" placeholder="Email" required>
-        <input type="password" placeholder="Password" required>
-        <input type="text" placeholder="Address">
-        <input type="text" placeholder="Phone Number">
-        <button>Create Account</button>
+<body>
+    <div class="header">
+        <h1>NittanyAuction - Register</h1>
     </div>
-</div>
+
+    <div class="hero">
+        <img src="{{ url_for('static', filename='images/nittanylion.jpg') }}" class="bg-img">
+        <div class="overlay">
+            <h2>Create Account</h2>
+
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <p style="color: #ff4d4d; font-weight: bold;">{{ messages[0] }}</p>
+              {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="/register">
+
+                <select name="role" id="roleSelect" onchange="toggleFields()" required style="width: 100%; margin-bottom: 10px; padding: 10px;">
+                    <option value="Bidder">Register as Bidder</option>
+                    <option value="Seller">Register as Student Seller</option>
+                    <option value="LocalVendor">Register as Local Vendor</option>
+                </select>
+
+                <input type="email" name="email" placeholder="Email" required>
+                <input type="password" name="password" placeholder="Password" required>
+
+                <div id="personalFields">
+                    <input type="text" name="first_name" placeholder="First Name">
+                    <input type="text" name="last_name" placeholder="Last Name">
+                    <input type="number" name="age" placeholder="Age">
+                    <input type="text" name="major" placeholder="Major">
+                    <input type="text" name="home_address_id" placeholder="Home Address ID">
+                </div>
+
+                <div id="bankFields" style="display: none;">
+                    <input type="text" name="bank_routing_number" placeholder="Bank Routing Number">
+                    <input type="text" name="bank_account_number" placeholder="Bank Account Number">
+                </div>
+
+                <div id="vendorFields" style="display: none;">
+                    <input type="text" name="business_name" placeholder="Business Name">
+                    <input type="text" name="business_address_id" placeholder="Business Address ID">
+                    <input type="text" name="customer_service_phone_number" placeholder="Customer Service Phone">
+                </div>
+
+                <button type="submit">Create Account</button>
+            </form>
+
+            <p>Already have an account? <a href="{{ url_for('login') }}">Log In</a></p>
+        </div>
+    </div>
+
+    <script>
+        function toggleFields() {
+            var role = document.getElementById("roleSelect").value;
+            var personalFields = document.getElementById("personalFields");
+            var bankFields = document.getElementById("bankFields");
+            var vendorFields = document.getElementById("vendorFields");
+
+            if (role === "Bidder") {
+                personalFields.style.display = "block";
+                bankFields.style.display = "none";
+                vendorFields.style.display = "none";
+            } else if (role === "Seller") {
+                // Student Sellers need both personal and bank info
+                personalFields.style.display = "block";
+                bankFields.style.display = "block";
+                vendorFields.style.display = "none";
+            } else if (role === "LocalVendor") {
+                // Vendors don't need first/last name, just business and bank info
+                personalFields.style.display = "none";
+                bankFields.style.display = "block";
+                vendorFields.style.display = "block";
+            }
+        }
+    </script>
+</body>
 </html>
