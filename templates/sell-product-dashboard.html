@@ -11,7 +11,16 @@
 
         <div class="seller-header-right">
             <button class="seller-top-btn">Profile</button>
-            <img src="{{ url_for('static', filename='images/psu-logo.png') }}" alt="PSU Logo" class="seller-logo">
+             <button class="top-btn" style="background-color: #d9534f; color: white; border: none;" onclick="window.location.href='{{ url_for('logout') }}'">
+              Logout
+            </button>
+        <a href="{{ url_for('seller_dashboard') }}">
+        <img
+          src="{{ url_for('static', filename='images/psu-logo.png') }}"
+          alt="Logo"
+          class="dashboard-logo"
+        />
+        </a>
         </div>
     </div>
 
@@ -21,6 +30,13 @@
         </div>
 
         <form method="post" action="{{ url_for('sell_product_dashboard') }}" class="seller-form-box">
+            {% if error %}
+                <div class="sidebar-empty">{{ error }}</div>
+            {% endif %}
+
+            {% if success %}
+                <div class="sidebar-empty">{{ success }}</div>
+            {% endif %}
 
             <!-- form for listing a new product product name is split into auction title and product name 
                 bid: reserve price. max bids: max number of bids allowed for this product. category is a drop down menu populated from the database
@@ -30,6 +46,7 @@
             <input type="text" name="auction_title" class="seller-input" placeholder="Auction Title...">
             <input type="text" name="product_name" class="seller-input" placeholder="Product Name...">
             <input type="text" name="product_description" class="seller-input" placeholder="Product Description...">
+            <input type="number" name="quantity" step="1" min="1" class="seller-input" placeholder="Quantity..." value="1">
             <input type="number" name="reserve_price" class="seller-input" placeholder="Reserve Price...">
             <input type="number" name="max_bids" step="1" min="1" class="seller-input" placeholder="Max Bids...">
             
