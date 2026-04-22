@@ -67,10 +67,6 @@ def login():
     conn.close()
     return redirect(url_for("bidder_dashboard"))
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
 
 @app.route("/bidder")
 def bidder_dashboard():
