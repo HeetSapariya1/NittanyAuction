@@ -308,7 +308,7 @@ def seller_dashboard():
         selected_category=selected_category,
         update_error=request.args.get("update_error", "").strip(),
         update_success=request.args.get("update_success", "").strip(),
-        edit_listing_id=request.args.get("edit_listing_id", "").strip()
+        edit_listing_id=request.args.get("edit_listing_id", "").strip(),
         avg_rating = avg_rating
     )
 
