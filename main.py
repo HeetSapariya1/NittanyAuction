@@ -2,7 +2,6 @@ from flask import Flask, flash, render_template, request, redirect, url_for, ses
 import sqlite3
 import os
 import hashlib  # 1. Added the hashlib library
-from datetime import datetime, timezone
 
 app = Flask(__name__)
 app.secret_key = 'nittany_auction_secret'
@@ -81,18 +80,9 @@ def bidder_dashboard():
 
     selected_category = request.args.get("category", "").strip()
     search_query = request.args.get("q", "").strip()
-    premium_only = request.args.get("premium") == "1"
 
-    email = session['email']
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-
-    cursor.execute("SELECT Premium_User FROM Bidders WHERE email = ?", (email,))
-    row = cursor.fetchone()
-    is_premium = row[0] == 1 if row else False
-
-    if not is_premium:
-        premium_only = False
 
     # Every category, flat, for the dropdown
     cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
@@ -103,13 +93,9 @@ def bidder_dashboard():
              FROM Auction_Listings
              WHERE Status = 1"""
     params = []
-    if not is_premium:
-        sql += " AND (Premium_Item = 0 OR Premium_Item IS NULL)"
     if selected_category:
         sql += " AND Category = ?"
         params.append(selected_category)
-    if premium_only:
-        sql += " AND Premium_Item = 1"
     if search_query:
         sql += """ AND (Auction_Title    LIKE ?
                     OR Product_Name      LIKE ?
@@ -130,8 +116,6 @@ def bidder_dashboard():
         products=products,
         selected_category=selected_category,
         search_query=search_query,
-        premium_only=premium_only,
-        is_premium=is_premium
     )
 
 
@@ -152,15 +136,13 @@ def profile_update():
     confirm_pass = request.form.get('confirm_password', '').strip()
 
     if role == 'bidder':
-        premium = 1 if request.form.get('premium_user') else 0
         cursor.execute("""
                 UPDATE Bidders
                 SET first_name   = ?,
                     last_name    = ?,
                     age          = ?,
                     phone_number = ?,
-                    major        = ?,
-                    Premium_User = ?
+                    major        = ?
                 WHERE email = ?
             """, (
             request.form.get("first_name"),
@@ -168,22 +150,11 @@ def profile_update():
             request.form.get("age") or None,
             request.form.get("phone_number"),
             request.form.get("major"),
-            premium,
             email
         ))
         redirect_to = "update_bidder_info"
 
     elif role == 'seller':
-        cursor.execute("""
-                UPDATE Sellers
-                SET bank_routing_number = ?,
-                    bank_account_number = ?
-                WHERE email = ?
-            """, (
-            request.form.get("bank_routing_number"),
-            request.form.get("bank_account_number"),
-            email
-        ))
         redirect_to = "update_seller_info"
 
     if new_password:
@@ -215,8 +186,7 @@ def seller_dashboard():
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
 
     sql = """SELECT Listing_ID, Category, Auction_Title, Product_Name,
-                    Product_Description, Premium_Item, Quantity, Reserve_Price, Max_Bids,
-                    Remaining_Bids, Status, Removal_Reason
+                    Product_Description, Premium_Item, Quantity, Reserve_Price, Max_Bids, Status
              FROM Auction_Listings
              WHERE Seller_Email = ?"""
     params = [session['email']]
@@ -261,89 +231,21 @@ def update_listing_status():
     premium = request.form.get("premium", "").strip()
     status_filter = request.form.get("status_filter", "all").strip().lower()
     category_filter = request.form.get("category_filter", "").strip()
-    removal_reason = request.form.get("removal_reason", "").strip()
 
     status_map = {"0", "1", "2"}
     if not listing_id.isdigit() or new_status not in status_map:
         return redirect(url_for("seller_dashboard", premium=premium, status=status_filter, category=category_filter))
-
-    removal_reason_value = (removal_reason or None) if int(new_status) in (0, 2) else None
 
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute(
         """UPDATE Auction_Listings
-           SET Status = ?,
-               Removal_Reason = ?
+           SET Status = ?
            WHERE Seller_Email = ? AND Listing_ID = ?""",
-        (
-            int(new_status),
-            removal_reason_value,
-            session['email'],
-            int(listing_id),
-        )
+        (int(new_status), session['email'], int(listing_id))
     )
     conn.commit()
-    conn.close()
-
-    redirect_args = {}
-    if premium == "1":
-        redirect_args["premium"] = "1"
-    if status_filter and status_filter != "all":
-        redirect_args["status"] = status_filter
-    if category_filter:
-        redirect_args["category"] = category_filter
-    return redirect(url_for("seller_dashboard", **redirect_args))
-
-
-@app.route("/seller/delete-listing", methods=["POST"])
-def delete_listing():
-    if 'email' not in session or session.get('role') != 'seller':
-        return redirect(url_for("login"))
-
-    listing_id = request.form.get("listing_id", "").strip()
-    premium = request.form.get("premium", "").strip()
-    status_filter = request.form.get("status_filter", "all").strip().lower()
-    category_filter = request.form.get("category_filter", "").strip()
-    removal_reason = request.form.get("removal_reason", "").strip()
-
-    if not listing_id.isdigit():
-        return redirect(url_for("seller_dashboard"))
-
-    conn = sqlite3.connect(db_path)
-    conn.execute("PRAGMA foreign_keys = ON")
-    cursor = conn.cursor()
-    cursor.execute(
-        """SELECT Auction_Title, Status
-           FROM Auction_Listings
-           WHERE Seller_Email = ? AND Listing_ID = ?""",
-        (session['email'], int(listing_id))
-    )
-    listing = cursor.fetchone()
-
-    if listing is not None:
-        cursor.execute(
-            """INSERT INTO Listing_Removals (
-                   Seller_Email, Listing_ID, Auction_Title, Removed_Status,
-                   Removal_Reason, Removed_At
-               ) VALUES (?, ?, ?, ?, ?, ?)""",
-            (
-                session['email'],
-                int(listing_id),
-                listing[0],
-                listing[1],
-                removal_reason or None,
-                datetime.now(timezone.utc).isoformat(),
-            )
-        )
-        cursor.execute(
-            """DELETE FROM Auction_Listings
-               WHERE Seller_Email = ? AND Listing_ID = ?""",
-            (session['email'], int(listing_id))
-        )
-        conn.commit()
-
     conn.close()
 
     redirect_args = {}
@@ -385,6 +287,26 @@ def register():
                            (email, hash_password(form.get("password", ""))))
 
             if role in ["Bidder", "Seller"]:
+                if form.get("zipcode"):
+                    cursor.execute("""
+                                   INSERT OR IGNORE INTO Zipcode_Info (zipcode,city,state_name)
+                                   VALUES (?, ?, ?)
+                                   """, (
+                                       form.get("zipcode"),
+                                       form.get("city"),
+                                       form.get("state"),
+                                   ))
+
+                    cursor.execute("""
+                                   INSERT INTO Address (address_id, zipcode, street_num, street_name)
+                                   VALUES (?, ?, ?, ?)
+                                   """, (
+                                       form.get("address_id"),
+                                       form.get("zipcode"),
+                                       form.get("street_num"),
+                                       form.get("street_name"),
+                                   ))
+
                 cursor.execute("""
                                INSERT INTO Bidders (email, first_name, last_name, age, major, home_address_id)
                                VALUES (?, ?, ?, ?, ?, ?)
@@ -394,8 +316,22 @@ def register():
                                    form.get("last_name"),
                                    form.get("age") or None,
                                    form.get("major"),
-                                   form.get("home_address_id") or None
+                                   form.get("address_id") if form.get("zipcode") else None
                                ))
+
+                if form.get("cc_number"):
+                    cursor.execute("""
+                                   INSERT INTO Credit_Cards (credit_card_num, card_type, expire_month, expire_year,
+                                                             security_code, Owner_email)
+                                   VALUES (?, ?, ?, ?, ?, ?)
+                                   """, (
+                                       form.get("cc_number"),
+                                       form.get("cc_type"),
+                                       form.get("cc_exp_month"),
+                                       form.get("cc_exp_year"),
+                                       form.get("cc_security_code"),
+                                       email
+                                   ))
 
             if role in ["Seller", "LocalVendor"]:
                 cursor.execute("""
@@ -404,6 +340,26 @@ def register():
                                """, (email, form.get("bank_routing_number"), form.get("bank_account_number")))
 
             if role == "LocalVendor":
+                if form.get("business_zipcode"):
+                    cursor.execute("""
+                                   INSERT OR IGNORE INTO Zipcode_Info (zipcode,city,state_name)
+                                   VALUES (?, ?, ?)
+                                   """, (
+                                       form.get("business_zipcode"),
+                                       form.get("business_city"),
+                                       form.get("business_state"),
+                                   ))
+
+                    cursor.execute("""
+                                   INSERT INTO Address (address_id, zipcode, street_num, street_name)
+                                   VALUES (?, ?, ?, ?)
+                                   """, (
+                                       form.get("business_address_id"),
+                                       form.get("business_zipcode"),
+                                       form.get("business_street_num"),
+                                       form.get("business_street_name"),
+                                   ))
+
                 cursor.execute("""
                                INSERT INTO Local_Vendors (email, business_name, business_address_id,
                                                           customer_service_phone_number)
@@ -411,26 +367,24 @@ def register():
                                """, (
                                    email,
                                    form.get("business_name"),
-                                   form.get("business_address_id") or None,
+                                   form.get("business_address_id") if form.get("business_zipcode") else None,
                                    form.get("customer_service_phone_number")
                                ))
 
     except sqlite3.IntegrityError:
-        # validity check
-        flash("Registration failed. Email already exists or Address ID is invalid.", "error")
+        flash("Registration failed. Email already exists or constraints have failed", "error")
         return redirect(url_for("register"))
 
-    # Log them in
     session['email'] = email
     session['role'] = "Seller" if role in ["Seller", "LocalVendor"] else "Bidder"
 
     flash("Registration successful! Welcome to Nittany Auction.", "success")
 
-    # redirect based on correct role
     if session['role'] == "Bidder":
         return redirect(url_for("bidder_dashboard"))
     else:
         return redirect(url_for("seller_dashboard"))
+
 
 @app.route("/sell-product-dashboard", methods=["GET", "POST"])
 def sell_product_dashboard():
@@ -481,13 +435,13 @@ def sell_product_dashboard():
                 (session['email'],)
             )
             next_listing_id = cursor.fetchone()[0]
-            premium_item = 1 if request.form.get("premium_item") else 0
+
             cursor.execute(
                 """INSERT INTO Auction_Listings (
                        Seller_Email, Listing_ID, Category, Auction_Title,
                        Product_Name, Product_Description, Premium_Item, Quantity,
-                       Reserve_Price, Max_Bids, Remaining_Bids, Status, Removal_Reason
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)""",
+                       Reserve_Price, Max_Bids, Status
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
                 (
                     session['email'],
                     next_listing_id,
@@ -499,8 +453,6 @@ def sell_product_dashboard():
                     quantity,
                     reserve_price,
                     max_bids,
-                    max_bids,
-                    None,
                 )
             )
             conn.commit()
@@ -534,6 +486,98 @@ def sell_product_dashboard():
 def temporary_dashboard():
     return render_template("temp-dashboard.html")
 
+@app.route("/auction-detail/<seller_email>/<int:listing_id>")
+def auction_detail(seller_email, listing_id):
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # grab the current listing  
+    cursor.execute("""
+        SELECT Seller_Email, Listing_ID, Auction_Title, Product_Name,
+               Product_Description, Reserve_Price, Max_Bids, Remaining_Bids, Status, Category
+        FROM Auction_Listings
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    listing = cursor.fetchone()
+
+    # find the highest bidder in the biids table for that listing  
+    cursor.execute("""
+        SELECT MAX(Bid_Price) FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    row = cursor.fetchone()
+    highest_bid = row[0] if row[0] is not None else 0.0
+
+    # selects most recent bid 
+    cursor.execute("""
+        SELECT Bidder_Email FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+        ORDER BY Bid_ID DESC LIMIT 1
+    """, (seller_email, listing_id))
+    last_row = cursor.fetchone()
+    last_bidder = last_row[0] if last_row else None
+
+    conn.close()
+
+    if listing is None:
+        return redirect(url_for("bidder_dashboard"))
+
+    feedback = request.args.get("feedback")
+    feedback_type = request.args.get("type", "error")
+
+    return render_template("auction-detail.html",
+        listing=listing,
+        highest_bid=highest_bid,
+        last_bidder=last_bidder,
+        feedback=feedback,
+        feedback_type=feedback_type,
+        current_user=session['email']
+    )
+
+@app.route("/auction-result/<seller_email>/<int:listing_id>")
+def auction_result(seller_email, listing_id):
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # find the listing 
+    cursor.execute("""
+        SELECT Auction_Title, Reserve_Price
+        FROM Auction_Listings
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    listing = cursor.fetchone()
+
+    # find the bidder 
+    cursor.execute("""
+        SELECT Bidder_Email, Bid_Price FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+        ORDER BY Bid_Price DESC LIMIT 1
+    """, (seller_email, listing_id))
+    top = cursor.fetchone()
+    conn.close()
+     
+    # display winning bid details 
+    winner_email = top[0]
+    winning_bid  = top[1]
+    reserve_met  = winning_bid >= listing[1]
+    is_winner    = (winner_email == session['email']) and reserve_met
+
+    return render_template("auction-result.html",
+        title=listing[0],
+        winner_email=winner_email,
+        winning_bid=winning_bid,
+        reserve_met=reserve_met,
+        is_winner=is_winner,
+        seller_email=seller_email, 
+        listing_id=listing_id  
+    )
+
 @app.route("/place-bid", methods=["POST"])
 def place_bid():
     if 'email' not in session or session.get('role') != 'bidder':
@@ -541,47 +585,126 @@ def place_bid():
 
     seller_email = request.form.get("seller_email", "").strip()
     listing_id   = request.form.get("listing_id", "").strip()
+    bidder_email = session['email']
+
     try:
         bid_price = float(request.form.get("bid_price", "").strip())
     except ValueError:
         return redirect(url_for("bidder_dashboard"))
 
+    def reject(msg):
+        return redirect(url_for("auction_detail",
+            seller_email=seller_email, listing_id=listing_id,
+            feedback=msg, type="error"))
+
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
-    cursor.execute(
-        """SELECT Status, Remaining_Bids
-           FROM Auction_Listings
-           WHERE Seller_Email = ? AND Listing_ID = ?""",
-        (seller_email, listing_id)
-    )
+
+    # Fetch listing from auction listings table 
+    cursor.execute("""
+        SELECT Status, Remaining_Bids, Reserve_Price, Auction_Title
+        FROM Auction_Listings
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
     listing = cursor.fetchone()
+
     if listing is None or listing[0] != 1 or listing[1] <= 0:
         conn.close()
-        return redirect(url_for("bidder_dashboard"))
+        return reject("This auction is not active.")
 
+    # Current highest bid
+    cursor.execute("""
+        SELECT MAX(Bid_Price) FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    row = cursor.fetchone()
+    highest_bid = row[0] if row[0] is not None else 0.0
+
+    # Rule 1: must be at least $1 higher
+    if bid_price < highest_bid + 1.0:
+        conn.close()
+        return reject(f"Bid too low. Minimum bid is ${highest_bid + 1.0:.2f}.")
+
+    # Rule 3: no consecutive bids
+    cursor.execute("""
+        SELECT Bidder_Email FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+        ORDER BY Bid_ID DESC LIMIT 1
+    """, (seller_email, listing_id))
+    last = cursor.fetchone()
+    if last and last[0] == bidder_email:
+        conn.close()
+        return reject("You placed the last bid. Wait for another bidder first.")
+
+    # All rules passed so insert bid
     cursor.execute(
-        "INSERT INTO Bids (Seller_Email, Listing_ID, Bidder_Email, Bid_Price) "
-        "VALUES (?, ?, ?, ?)",
-        (seller_email, listing_id, session['email'], bid_price)
+        "INSERT INTO Bids (Seller_Email, Listing_ID, Bidder_Email, Bid_Price) VALUES (?, ?, ?, ?)",
+        (seller_email, listing_id, bidder_email, bid_price)
     )
-    remaining_bids = listing[1] - 1
-    new_status = 2 if remaining_bids == 0 else 1
-    cursor.execute(
-        """UPDATE Auction_Listings
-           SET Remaining_Bids = ?, Status = ?, Removal_Reason = ?
-           WHERE Seller_Email = ? AND Listing_ID = ?""",
-        (
-            remaining_bids,
-            new_status,
-            "Listing automatically closed after max bids reached." if new_status == 2 else None,
-            seller_email,
-            listing_id,
-        )
-    )
+
+    remaining = listing[1] - 1
+    new_status = 2 if remaining == 0 else 1
+
+    # update auction listings remaining bids, status 
+    cursor.execute(""" 
+        UPDATE Auction_Listings SET Remaining_Bids = ?, Status = ?
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (remaining, new_status, seller_email, listing_id))
+
     conn.commit()
     conn.close()
-    return redirect(url_for("my_bids_dashboard"))
+
+    # If auction just ended, go to result page 
+    if new_status == 2:
+        return redirect(url_for("auction_result",
+            seller_email=seller_email, listing_id=listing_id))
+
+    # Otherwise back to detail page with success
+    return redirect(url_for("auction_detail",
+        seller_email=seller_email, listing_id=listing_id,
+        feedback="Bid placed!", type="success"))
+
+@app.route("/payment/<seller_email>/<int:listing_id>", methods=["GET", "POST"])
+def payment(seller_email, listing_id):
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    bidder_email = session['email']
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT Auction_Title, Reserve_Price FROM Auction_Listings
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    listing = cursor.fetchone() # get the listing details
+
+    cursor.execute("""
+        SELECT MAX(Bid_Price) FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ? AND Bidder_Email = ?
+    """, (seller_email, listing_id, bidder_email))
+    row = cursor.fetchone() 
+    winning_bid = row[0] if row[0] else 0.0 # find the winning bid amount 
+
+    cursor.execute("""
+        SELECT credit_card_num, card_type, expire_month, expire_year
+        FROM Credit_Cards WHERE Owner_email = ? LIMIT 1
+    """, (bidder_email,))
+    saved_card = cursor.fetchone() # use saved card if there is one 
+    conn.close()
+
+    if request.method == "POST":
+        # save the card information and redirect to confirmation page 
+        pass
+
+    return render_template("payment.html",
+        listing=listing,
+        winning_bid=winning_bid,
+        saved_card=saved_card,
+        seller_email=seller_email,
+        listing_id=listing_id
+    )
 
 @app.route("/my-bids-dashboard")
 def my_bids_dashboard():

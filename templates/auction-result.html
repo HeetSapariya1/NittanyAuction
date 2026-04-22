@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Auction Result</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="seller-header">
+      <h1>Auction Ended</h1>
+      <div class="seller-header-right">
+        <button
+          class="seller-top-btn"
+          onclick="window.location.href='{{ url_for('bidder_dashboard') }}'"
+        >
+          ← Home
+        </button>
+        <a href="{{ url_for('bidder_dashboard') }}">
+          <img
+            src="{{ url_for('static', filename='images/psu-logo.png') }}"
+            alt="Logo"
+            class="dashboard-logo"
+          />
+        </a>
+      </div>
+    </div>
+
+    <div class="seller-wrapper">
+      <div class="seller-watermark">
+        <img
+          src="{{ url_for('static', filename='images/Penn-State-University-Seal-Logo.png') }}"
+          alt="Watermark"
+        />
+      </div>
+
+      <h2 style="margin-left: 6%; font-weight: normal">{{ title }}</h2>
+
+      <div class="seller-form-box">
+        <input
+          class="seller-input"
+          value="Winning Bid: ${{ '%.2f'|format(winning_bid) }}"
+          disabled
+        />
+
+        {% if reserve_met %} {% if is_winner %}
+        <input
+          class="seller-input"
+          style="
+            color: #155724;
+            background: #d4edda;
+            height: auto;
+            padding: 14px 20px;
+          "
+          value="🎉 You won this auction!"
+          disabled
+        />
+        <div class="seller-bottom-row">
+          <a
+            href="{{ url_for('payment', seller_email=seller_email, listing_id=listing_id) }}"
+          >
+            <button class="seller-list-btn">Proceed to Payment</button>
+          </a>
+        </div>
+        {% else %}
+        <input
+          class="seller-input"
+          style="
+            color: #721c24;
+            background: #f8d7da;
+            height: auto;
+            padding: 14px 20px;
+          "
+          value="This auction was won by another bidder."
+          disabled
+        />
+        {% endif %} {% else %}
+        <input
+          class="seller-input"
+          style="
+            color: #856404;
+            background: #fff3cd;
+            height: auto;
+            padding: 14px 20px;
+          "
+          value="Auction ended but the reserve price was not met. No sale."
+          disabled
+        />
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
