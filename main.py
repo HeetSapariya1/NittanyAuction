@@ -648,11 +648,45 @@ def payment(seller_email, listing_id):
         FROM Credit_Cards WHERE Owner_email = ? LIMIT 1
     """, (bidder_email,))
     saved_card = cursor.fetchone()
-    conn.close()
 
     if request.method == "POST":
-        pass  # payment logic coming soon
+        card_num      = request.form.get("credit_card_num", "").strip()
+        card_type     = request.form.get("card_type", "").strip()
+        expire_month  = request.form.get("expire_month", "").strip()
+        expire_year   = request.form.get("expire_year", "").strip()
+        security_code = request.form.get("security_code", "").strip()
 
+        # insert card
+        cursor.execute("SELECT 1 FROM Credit_Cards WHERE credit_card_num = ?", (card_num,))
+        if cursor.fetchone():
+            cursor.execute("""
+                UPDATE Credit_Cards
+                SET card_type=?, expire_month=?, expire_year=?, security_code=?, Owner_email=?
+                WHERE credit_card_num=?
+            """, (card_type, expire_month, expire_year, security_code, bidder_email, card_num))
+        else:
+            cursor.execute("""
+                INSERT INTO Credit_Cards
+                    (credit_card_num, card_type, expire_month, expire_year, security_code, Owner_email)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (card_num, card_type, expire_month, expire_year, security_code, bidder_email))
+
+        # Record transaction 
+        cursor.execute("""
+            INSERT INTO Transactions (Seller_Email, Listing_ID, Buyer_Email, Date, Payment)
+            VALUES (?, ?, ?, ?, ?)
+        """, (seller_email, listing_id, bidder_email,
+              datetime.now(timezone.utc).isoformat(), winning_bid))
+
+        cursor.execute("""
+            UPDATE Sellers SET balance = balance + ? WHERE email = ?
+        """, (winning_bid, seller_email))
+
+        conn.commit()
+        conn.close()
+        return redirect(url_for("confirmation_page", seller_email=seller_email))
+
+    conn.close()
     return render_template("payment.html",
         listing=listing,
         winning_bid=winning_bid,
@@ -660,6 +694,25 @@ def payment(seller_email, listing_id):
         seller_email=seller_email,
         listing_id=listing_id
     )
+
+@app.route("/confirmation")
+def confirmation_page():
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+    seller_email = request.args.get("seller_email", "")
+    return render_template("confirmation-page.html", seller_email=seller_email)
+
+@app.route("/submit-rating", methods=["POST"])
+def submit_rating():
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    seller_email = request.form.get("seller_email", "")
+    rating = request.form.get("rating", "0")
+
+    # save rating to DB
+
+    return redirect(url_for("bidder_dashboard"))
 
 @app.route("/place-bid", methods=["POST"])
 def place_bid():
