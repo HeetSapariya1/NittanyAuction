@@ -20,6 +20,7 @@
         </button>
       </div>
     </div>
+
     <div class="dashboard-wrapper">
       <div class="dashboard-main">
         <div
@@ -33,26 +34,36 @@
           <div
             style="
               padding: 16px;
-              background: #d4edda;
-              color: #155724;
+              background: white;
+              color: green;
               border-radius: 6px;
             "
           >
             You won this auction!
           </div>
-          <a
-            href="{{ url_for('payment', seller_email=seller_email, listing_id=listing_id) }}"
+          <button
+            type="button"
+            style="
+              margin-top: 12px;
+              background-color: blue;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              font-size: 1rem;
+              border-radius: 6px;
+              cursor: pointer;
+            "
+            onclick="window.location.href='{{ url_for('payment', seller_email=seller_email, listing_id=listing_id) }}'"
           >
-            <button type="button" class="top-btn" style="margin-top: 12px">
-              Proceed to Payment →
-            </button>
-          </a>
+            Proceed to Payment
+          </button>
+
           {% else %}
           <div
             style="
               padding: 16px;
-              background: #f8d7da;
-              color: #721c24;
+              background: white;
+              color: brown;
               border-radius: 6px;
             "
           >
@@ -62,8 +73,8 @@
           <div
             style="
               padding: 16px;
-              background: #fff3cd;
-              color: #856404;
+              background: white;
+              color: brown;
               border-radius: 6px;
             "
           >
