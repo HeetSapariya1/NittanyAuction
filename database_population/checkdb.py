@@ -161,6 +161,33 @@ with open("dataset/Auction_Listings.csv", "r", encoding="utf-8-sig") as file:
             None
         ))
 
+with open("dataset/Ratings.csv", "r", encoding="utf-8-sig") as file:
+    reader = csv.DictReader(file)
+    for row in reader:
+        bidder_email = row["Bidder_Email"].strip()
+        seller_email = row["Seller_Email"].strip()
+        rating_date = row["Date"].strip()
+        rating_value = int(row["Rating"].strip())
+        rating_desc = row["Rating_Desc"].strip() or None
+
+        cur.execute("""
+            INSERT INTO Ratings (
+                Bidder_email,
+                Seller_email,
+                Listing_ID,
+                Date,
+                Rating,
+                Rating_Desc
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            bidder_email,
+            seller_email,
+            None,
+            rating_date,
+            rating_value,
+            rating_desc
+        ))
+
 conn.commit()
 
 conn.close()

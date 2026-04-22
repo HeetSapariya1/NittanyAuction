@@ -1,20 +1,20 @@
 PRAGMA foreign_keys = ON;
 
 -- DROP TABLES 
+DROP TABLE IF EXISTS Ratings;
+DROP TABLE IF EXISTS Bids;
+DROP TABLE IF EXISTS Transactions;
+DROP TABLE IF EXISTS Credit_Cards;
 DROP TABLE IF EXISTS Local_Vendors;
-DROP TABLE IF EXISTS Sellers;
+DROP TABLE IF EXISTS Auction_Listings;
+DROP TABLE IF EXISTS Listing_Removals;
+DROP TABLE IF EXISTS Categories;
 DROP TABLE IF EXISTS Helpdesk;
+DROP TABLE IF EXISTS Sellers;
 DROP TABLE IF EXISTS Bidders;
 DROP TABLE IF EXISTS Users;
 DROP TABLE IF EXISTS Address;
 DROP TABLE IF EXISTS Zipcode_Info;
-DROP TABLE IF EXISTS Bids;
-DROP TABLE IF EXISTS Transactions;
-DROP TABLE IF EXISTS Auction_Listings;
-DROP TABLE IF EXISTS Listing_Removals;
-DROP TABLE IF EXISTS Categories;
-DROP TABLE IF EXISTS Credit_Cards;
-DROP TABLE IF EXISTS Ratings;
 
 -- ZIPCODE
 -- maps zip code to its specific city and state, which can be used to populate the address table and provide location information for users and vendors.
@@ -94,14 +94,16 @@ CREATE TABLE Credit_Cards (
 );
 
 CREATE TABLE Ratings (
+    Rating_ID INTEGER PRIMARY KEY AUTOINCREMENT,
     Bidder_email TEXT NOT NULL,
     Seller_email TEXT NOT NULL,
+    Listing_ID INTEGER,
     Date TEXT NOT NULL,
     Rating INTEGER CHECK (Rating BETWEEN 1 AND 5), -- rating must be between 1 and 5
     Rating_Desc TEXT,
-    PRIMARY KEY( Bidder_email, Seller_email ),
     FOREIGN KEY (Bidder_email) REFERENCES Bidders(email),
-    FOREIGN KEY (Seller_email) REFERENCES Sellers(email)
+    FOREIGN KEY (Seller_email) REFERENCES Sellers(email),
+    FOREIGN KEY (Seller_email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID)
 );
 
 -- CATEGORIES

@@ -611,10 +611,6 @@ def register():
     email = form.get("email", "").strip()
     role = form.get("role", "Bidder")
 
-    if role == "HelpDesk":
-        flash("External registration for HelpDesk is not permitted.", "error")
-        return redirect(url_for("register"))
-
     try:
         with sqlite3.connect(db_path) as conn:
             conn.execute("PRAGMA foreign_keys = ON")
@@ -623,7 +619,7 @@ def register():
             cursor.execute("INSERT INTO Users (email, password) VALUES (?, ?)",
                            (email, hash_password(form.get("password", ""))))
 
-            if role in ["Bidder", "Seller"]:
+            if role in ["Bidder", "Seller"]: # All information pertaining to both Bidder and Seller
                 cursor.execute("""
                                INSERT INTO Bidders (email, first_name, last_name, age, major, home_address_id)
                                VALUES (?, ?, ?, ?, ?, ?)
@@ -636,13 +632,13 @@ def register():
                                    form.get("home_address_id") or None
                                ))
 
-            if role in ["Seller", "LocalVendor"]:
+            if role in ["Seller", "LocalVendor"]: # All information pertaining to both Local Vendor and Seller
                 cursor.execute("""
                                INSERT INTO Sellers (email, bank_routing_number, bank_account_number, balance)
                                VALUES (?, ?, ?, 0.0)
                                """, (email, form.get("bank_routing_number"), form.get("bank_account_number")))
 
-            if role == "LocalVendor":
+            if role == "LocalVendor": # All information pertaining to Local Vendor
                 cursor.execute("""
                                INSERT INTO Local_Vendors (email, business_name, business_address_id,
                                                           customer_service_phone_number)
@@ -654,7 +650,7 @@ def register():
                                    form.get("customer_service_phone_number")
                                ))
 
-    except sqlite3.IntegrityError:
+    except sqlite3.IntegrityError: #Validity check 
         # validity check
         flash("Registration failed. Email already exists or Address ID is invalid.", "error")
         return redirect(url_for("register"))
@@ -1188,25 +1184,25 @@ def submit_rating():
     rating_desc = rating_desc_map.get(rating, "Okay")
     rating_date = datetime.now(timezone.utc).date().isoformat()
 
-    # update an existing rating for this seller, or insert a new one
+    # update an existing rating for this listing, or insert a new one
     cursor.execute("""
         SELECT 1
         FROM Ratings
-        WHERE Bidder_email=? AND Seller_Email=?
-    """, (bidder, seller))
+        WHERE Bidder_email=? AND Seller_Email=? AND Listing_ID=?
+    """, (bidder, seller, listing))
 
     if cursor.fetchone():
         cursor.execute("""
             UPDATE Ratings
             SET Date = ?, Rating = ?, Rating_Desc = ?
-            WHERE Bidder_email = ? AND Seller_Email = ?
-        """, (rating_date, rating, rating_desc, bidder, seller))
+            WHERE Bidder_email = ? AND Seller_Email = ? AND Listing_ID = ?
+        """, (rating_date, rating, rating_desc, bidder, seller, listing))
         feedback = "Your rating was updated."
     else:
         cursor.execute("""
-            INSERT INTO Ratings (Bidder_email, Seller_Email, Date, Rating, Rating_Desc)
-            VALUES (?, ?, ?, ?, ?)
-        """, (bidder, seller, rating_date, rating, rating_desc))
+            INSERT INTO Ratings (Bidder_email, Seller_Email, Listing_ID, Date, Rating, Rating_Desc)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (bidder, seller, listing, rating_date, rating, rating_desc))
         feedback = "Thanks for rating this seller."
 
     conn.commit()
