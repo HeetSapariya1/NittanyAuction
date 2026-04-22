@@ -191,9 +191,74 @@ def helpdesk_dashboard():
     return render_template("helpdesk.html")
 
 
-@app.route("/register")
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    return render_template("register.html")
+    if request.method == "GET":
+        return render_template("register.html")
+
+    form = request.form
+    email = form.get("email", "").strip()
+    role = form.get("role", "Bidder")
+
+    if role == "HelpDesk":
+        flash("External registration for HelpDesk is not permitted.", "error")
+        return redirect(url_for("register"))
+
+    try:
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("PRAGMA foreign_keys = ON")
+            cursor = conn.cursor()
+
+            cursor.execute("INSERT INTO Users (email, password) VALUES (?, ?)",
+                           (email, hash_password(form.get("password", ""))))
+
+            if role in ["Bidder", "Seller"]:
+                cursor.execute("""
+                               INSERT INTO Bidders (email, first_name, last_name, age, major, home_address_id)
+                               VALUES (?, ?, ?, ?, ?, ?)
+                               """, (
+                                   email,
+                                   form.get("first_name"),
+                                   form.get("last_name"),
+                                   form.get("age") or None,
+                                   form.get("major"),
+                                   form.get("home_address_id") or None
+                               ))
+
+            if role in ["Seller", "LocalVendor"]:
+                cursor.execute("""
+                               INSERT INTO Sellers (email, bank_routing_number, bank_account_number, balance)
+                               VALUES (?, ?, ?, 0.0)
+                               """, (email, form.get("bank_routing_number"), form.get("bank_account_number")))
+
+            if role == "LocalVendor":
+                cursor.execute("""
+                               INSERT INTO Local_Vendors (email, business_name, business_address_id,
+                                                          customer_service_phone_number)
+                               VALUES (?, ?, ?, ?)
+                               """, (
+                                   email,
+                                   form.get("business_name"),
+                                   form.get("business_address_id") or None,
+                                   form.get("customer_service_phone_number")
+                               ))
+
+    except sqlite3.IntegrityError:
+        # validity check
+        flash("Registration failed. Email already exists or Address ID is invalid.", "error")
+        return redirect(url_for("register"))
+
+    # Log them in
+    session['email'] = email
+    session['role'] = "Seller" if role in ["Seller", "LocalVendor"] else "Bidder"
+
+    flash("Registration successful! Welcome to Nittany Auction.", "success")
+
+    # redirect based on correct role
+    if session['role'] == "Bidder":
+        return redirect(url_for("bidder_dashboard"))
+    else:
+        return redirect(url_for("seller_dashboard"))
 
 @app.route("/sell-product-dashboard", methods=["GET", "POST"])
 def sell_product_dashboard():
