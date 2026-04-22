@@ -16,11 +16,6 @@
         >
           Profile
         </button>
-        {% if can_switch_to_bidder %}
-        <button class="top-btn" onclick="window.location.href='{{ url_for('switch_dashboard', target='bidder') }}'">
-            Bidder Dashboard
-        </button>
-        {% endif %}
             <button class="top-btn" style="background-color: #d9534f; color: white; border: none;" onclick="window.location.href='{{ url_for('logout') }}'">
               Logout
             </button>
