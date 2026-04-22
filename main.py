@@ -85,7 +85,7 @@ def bidder_dashboard():
     cursor = conn.cursor()
 
     # Every category, flat, for the dropdown
-    cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+    cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
 
     # Build the listings query dynamically so we can combine category + search
