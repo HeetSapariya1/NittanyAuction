@@ -1,115 +1,125 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8">
     <title>Payment — NittanyAuction</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='style.css') }}"
-    />
-  </head>
-  <body>
-    <div class="seller-header">
-      <h1>Payment</h1>
-      <div class="seller-header-right">
-        <button
-          class="top-btn"
-          onclick="window.location.href='{{ url_for('bidder_dashboard') }}'"
-        >
-          ← Back
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="seller-header">
+    <h1>Payment</h1>
+    <div class="seller-header-right">
+        <button class="top-btn"
+                onclick="window.location.href='{{ url_for('bidder_dashboard') }}'">
+            ← Back
         </button>
-        <button
-          class="top-btn"
-          style="background-color: #d9534f; color: white; border: none"
-          onclick="window.location.href='{{ url_for('logout') }}'"
-        >
-          Logout
+        <button class="top-btn"
+                style="background-color: #d9534f; color: white; border: none;"
+                onclick="window.location.href='{{ url_for('logout') }}'">
+            Logout
         </button>
         <a href="{{ url_for('bidder_dashboard') }}">
-          <img
-            src="{{ url_for('static', filename='images/psu-logo.png') }}"
-            alt="Logo"
-            class="dashboard-logo"
-          />
+            <img src="{{ url_for('static', filename='images/psu-logo.png') }}"
+                 alt="Logo" class="dashboard-logo" />
         </a>
-      </div>
+    </div>
+</div>
+
+<!-- MAIN WRAPPER -->
+<div class="seller-wrapper">
+
+    <div class="seller-watermark">
+        <img src="{{ url_for('static', filename='images/Penn-State-University-Seal-Logo.png') }}"
+             alt="Watermark">
     </div>
 
-    <!-- MAIN WRAPPER -->
-    <div class="seller-wrapper">
-      <div class="seller-watermark">
-        <img
-          src="{{ url_for('static', filename='images/Penn-State-University-Seal-Logo.png') }}"
-          alt="Watermark"
-        />
-      </div>
-
-      <h2 style="margin-left: 6%; font-weight: normal">
+    <h2 style="margin-left:6%; font-weight:normal;">
         {{ listing[0] }} — <strong>${{ "%.2f"|format(winning_bid) }}</strong>
-      </h2>
+    </h2>
 
-      {% if error %}
-      <p style="margin-left: 6%; color: #721c24">{{ error }}</p>
-      {% endif %}
+    {% if error %}
+    <p style="margin-left:6%; color:#721c24; font-weight:bold;">{{ error }}</p>
+    {% endif %}
 
-      <form method="POST">
-        <!-- These inputs collect the card details needed to complete payment. -->
+    {% if saved_card %}
+    <p style="margin-left:6%; color:#155724;">
+        Saved card on file: {{ saved_card[1] }} ending in {{ saved_card[0][-4:] }}
+        — you may update it below.
+    </p>
+    {% endif %}
+
+    <form method="POST">
         <div class="seller-form-box">
-          <input
-            class="seller-input"
-            name="credit_card_num"
-            placeholder="Credit Card Number..."
-            value="{{ saved_card[0] if saved_card else '' }}"
-            required
-          />
 
-          <input
-            class="seller-input"
-            name="card_type"
-            placeholder="Card Type (Visa, Mastercard...)..."
-            value="{{ saved_card[1] if saved_card else '' }}"
-            required
-          />
+            <!-- Card number: exactly 16 digits -->
+            <input class="seller-input"
+                   name="credit_card_num"
+                   placeholder="Card Number (16 digits)..."
+                   value="{{ saved_card[0] if saved_card else '' }}"
+                   pattern="\d{16}"
+                   maxlength="16"
+                   inputmode="numeric"
+                   title="Card number must be exactly 16 digits"
+                   required>
 
-          <div style="display: flex; gap: 8px">
-            <input
-              class="seller-input"
-              name="expire_month"
-              type="number"
-              placeholder="Exp Month..."
-              min="1"
-              max="12"
-              value="{{ saved_card[2] if saved_card else '' }}"
-              required
-            />
+            <!-- Card type: controlled dropdown -->
+            <select class="seller-input" name="card_type" required>
+                <option value="" disabled
+                    {% if not saved_card %}selected{% endif %}>
+                    Card Type...
+                </option>
+                {% for t in ['Visa', 'Mastercard', 'American Express', 'Discover'] %}
+                <option value="{{ t }}"
+                    {% if saved_card and saved_card[1] == t %}selected{% endif %}>
+                    {{ t }}
+                </option>
+                {% endfor %}
+            </select>
 
-            <input
-              class="seller-input"
-              name="expire_year"
-              type="number"
-              placeholder="Exp Year..."
-              min="2024"
-              value="{{ saved_card[3] if saved_card else '' }}"
-              required
-            />
-          </div>
+            <!-- Expiry: month and year side by side -->
+            <div style="display:flex; gap:8px;">
+                <input class="seller-input"
+                       name="expire_month"
+                       type="number"
+                       placeholder="Exp Month (1-12)..."
+                       min="1" max="12"
+                       value="{{ saved_card[2] if saved_card else '' }}"
+                       title="Enter a month between 1 and 12"
+                       required>
 
-          <input
-            class="seller-input"
-            name="security_code"
-            type="number"
-            placeholder="Security Code..."
-            required
-          />
+                <input class="seller-input"
+                       name="expire_year"
+                       type="number"
+                       placeholder="Exp Year..."
+                       min="2025" max="2040"
+                       value="{{ saved_card[3] if saved_card else '' }}"
+                       title="Enter a valid expiry year"
+                       required>
+            </div>
+
+            <!-- Security code: 3 or 4 digits -->
+            <input class="seller-input"
+                   name="security_code"
+                   type="password"
+                   placeholder="Security Code (3-4 digits)..."
+                   pattern="\d{3,4}"
+                   maxlength="4"
+                   inputmode="numeric"
+                   title="Security code must be 3 or 4 digits"
+                   required>
+
         </div>
 
         <input type="hidden" name="seller_email" value="{{ seller_email }}" />
-        <input type="hidden" name="listing_id" value="{{ listing_id }}" />
+        <input type="hidden" name="listing_id"   value="{{ listing_id }}" />
 
         <div class="seller-bottom-row">
-          <button type="submit" class="seller-list-btn">Confirm Payment</button>
+            <button type="submit" class="seller-list-btn">Confirm Payment</button>
         </div>
-      </form>
-    </div>
-  </body>
+    </form>
+</div>
+
+</body>
 </html>
