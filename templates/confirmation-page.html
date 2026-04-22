@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmation Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .confirm-box {
+            position: relative;
+            z-index: 1;
+            width: 60%;
+            max-width: 700px;
+            margin: 60px auto 0 auto;
+            border: 2px solid #333;
+            background: white;
+            padding: 48px 40px 36px 40px;
+            text-align: center;
+        }
+
+        .confirm-box p {
+            font-size: 1.1rem;
+            line-height: 2;
+            color: #222;
+        }
+
+        .confirm-box a {
+            color: #0b2a5b;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+
+        .stars-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .star {
+            font-size: 52px;
+            color: white;
+            text-shadow: 0 0 0 2px #0b2a5b;
+            cursor: pointer;
+            transition: color 0.15s;
+            -webkit-text-stroke: 2px #0b2a5b;
+        }
+
+        .star.selected,
+        .star:hover {
+            color: #0b2a5b;
+        }
+
+        .submit-btn {
+            background: #0b2a5b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 16px 48px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 16px;
+        }
+
+        .submit-btn:hover { background: #24497f; }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="dashboard-header">
+    <h1>Confirmation Page</h1>
+    <div class="header-buttons">
+        <button class="top-btn"
+                onclick="window.location.href='{{ url_for('sell_product_dashboard') }}'">
+            Sell Product
+        </button>
+        <button class="top-btn"
+                onclick="window.location.href='{{ url_for('update_bidder_info') }}'">
+            Profile
+        </button>
+        <img src="{{ url_for('static', filename='images/psu-logo.png') }}"
+             alt="Logo" class="dashboard-logo">
+    </div>
+</div>
+
+<div class="dashboard-wrapper">
+    <div class="dashboard-watermark">
+        <img src="{{ url_for('static', filename='images/Penn-State-University-Seal-Logo.png') }}"
+             alt="Watermark">
+    </div>
+
+    <!-- THANK YOU BOX -->
+    <div class="confirm-box">
+        <p>
+            THANK YOU!<br><br>
+            The seller is getting started on your order right away. In the
+            meantime, leave a rating on how the seller did and check out other
+            items we have at <a href="{{ url_for('bidder_dashboard') }}">NittanyAuction</a>!
+        </p>
+    </div>
+
+    <!-- STARS + SUBMIT -->
+    <form method="POST" action="{{ url_for('submit_rating') }}">
+        <input type="hidden" name="seller_email" value="{{ seller_email }}">
+        <input type="hidden" name="rating" id="rating-value" value="0">
+
+        <div class="stars-row">
+            {% for i in range(1, 6) %}
+                <span class="star" data-value="{{ i }}"
+                      onclick="setRating({{ i }})">★</span>
+            {% endfor %}
+            <button type="submit" class="submit-btn">Submit</button>
+        </div>
+    </form>
+
+</div>
+
+</body>
+</html>
