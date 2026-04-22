@@ -100,6 +100,12 @@
             meantime, leave a rating on how the seller did and check out other
             items we have at <a href="{{ url_for('bidder_dashboard') }}">NittanyAuction</a>!
         </p>
+
+        {% if rating_feedback %}
+        <p style="margin-top: 20px; color: {{ '#155724' if rating_feedback_type == 'success' else '#721c24' }}; font-weight: bold;">
+            {{ rating_feedback }}
+        </p>
+        {% endif %}
     </div>
 
     <form method="POST" action="{{ url_for('submit_rating') }}">

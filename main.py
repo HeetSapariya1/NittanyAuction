@@ -329,7 +329,7 @@ def seller_dashboard():
     seller_listings = cursor.fetchall()
 
     cursor.execute("""
-        SELECT COALESCE(AVG(Rating),0)
+        SELECT AVG(Rating)
         FROM Ratings
         WHERE Seller_Email = ?
     """, (session['email'],))
@@ -912,7 +912,16 @@ def confirmation_page():
     if 'email' not in session or session.get('role') != 'bidder':
         return redirect(url_for("login"))
     seller_email = request.args.get("seller_email", "")
-    return render_template("confirmation-page.html", seller_email=seller_email)
+    listing_id = request.args.get("listing_id", "").strip()
+    rating_feedback = request.args.get("rating_feedback", "").strip()
+    rating_feedback_type = request.args.get("rating_feedback_type", "success").strip()
+    return render_template(
+        "confirmation-page.html",
+        seller_email=seller_email,
+        listing_id=listing_id,
+        rating_feedback=rating_feedback,
+        rating_feedback_type=rating_feedback_type
+    )
 
 
 @app.route("/place-bid", methods=["POST"])
@@ -1085,9 +1094,28 @@ def submit_rating():
         return redirect(url_for("login"))
 
     bidder = session['email']
-    seller = request.form.get("seller_email")
-    listing = request.form.get("listing_id")
-    rating = int(request.form.get("rating"))
+    seller = request.form.get("seller_email", "").strip()
+    listing = request.form.get("listing_id", "").strip()
+
+    try:
+        rating = int(request.form.get("rating", "").strip())
+    except ValueError:
+        return redirect(url_for(
+            "confirmation_page",
+            seller_email=seller,
+            listing_id=listing,
+            rating_feedback="Please choose a rating from 1 to 5.",
+            rating_feedback_type="error"
+        ))
+
+    if rating < 1 or rating > 5:
+        return redirect(url_for(
+            "confirmation_page",
+            seller_email=seller,
+            listing_id=listing,
+            rating_feedback="Please choose a rating from 1 to 5.",
+            rating_feedback_type="error"
+        ))
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -1103,27 +1131,46 @@ def submit_rating():
         conn.close()
         return redirect(url_for("bidder_dashboard"))
 
-    # prevent duplicate rating
+    rating_desc_map = {
+        1: "Bad",
+        2: "Not Bad",
+        3: "Okay",
+        4: "Good",
+        5: "Awesome",
+    }
+    rating_desc = rating_desc_map.get(rating, "Okay")
+    rating_date = datetime.now(timezone.utc).date().isoformat()
+
+    # update an existing rating for this seller, or insert a new one
     cursor.execute("""
-        SELECT *
+        SELECT 1
         FROM Ratings
-        WHERE Bidder_email=? AND Seller_Email=? AND Listing_ID=?
-    """, (bidder, seller, listing))
+        WHERE Bidder_email=? AND Seller_Email=?
+    """, (bidder, seller))
 
     if cursor.fetchone():
-        conn.close()
-        return redirect(url_for("bidder_dashboard"))
-
-    # insert rating
-    cursor.execute("""
-        INSERT INTO Ratings (Bidder_email, Seller_Email, Listing_ID, Rating)
-        VALUES (?, ?, ?, ?)
-    """, (bidder, seller, listing, rating))
-
+        cursor.execute("""
+            UPDATE Ratings
+            SET Date = ?, Rating = ?, Rating_Desc = ?
+            WHERE Bidder_email = ? AND Seller_Email = ?
+        """, (rating_date, rating, rating_desc, bidder, seller))
+        feedback = "Your rating was updated."
+    else:
+        cursor.execute("""
+            INSERT INTO Ratings (Bidder_email, Seller_Email, Date, Rating, Rating_Desc)
+            VALUES (?, ?, ?, ?, ?)
+        """, (bidder, seller, rating_date, rating, rating_desc))
+        feedback = "Thanks for rating this seller."
 
     conn.commit()
     conn.close()
-    return redirect(url_for("bidder_dashboard"))
+    return redirect(url_for(
+        "confirmation_page",
+        seller_email=seller,
+        listing_id=listing,
+        rating_feedback=feedback,
+        rating_feedback_type="success"
+    ))
 
 if __name__ == "__main__":
     app.run(debug=True)
