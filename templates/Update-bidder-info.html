@@ -105,7 +105,11 @@
             </button>
             <button type="submit" class="seller-list-btn">Save Profile</button>
             <label class="premium-label">
-                <input type="checkbox" class="premium-check"> Premium User
+                <input type="checkbox"
+                    class="premium-check"
+                    name="premium_user"
+                     {% if bidder['Premium_User'] == 1 %}checked{% endif %}>
+                 Premium User
             </label>
         </div>
 

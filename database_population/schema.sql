@@ -47,6 +47,7 @@ CREATE TABLE Bidders (
     email TEXT PRIMARY KEY, -- unique email for each bidder
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
+    Premium_User INTEGER DEFAULT 0 CHECK (Premium_User IN (0, 1)),
     age INTEGER,
     phone_number TEXT,
     major TEXT,
@@ -149,3 +150,5 @@ CREATE TABLE Transactions (
     FOREIGN KEY (Seller_Email, Listing_ID) REFERENCES Auction_Listings(Seller_Email, Listing_ID) ON DELETE CASCADE, -- deeleting a seller or listing removes the transaction 
     FOREIGN KEY (Buyer_Email) REFERENCES Bidders(email) 
 );
+
+
