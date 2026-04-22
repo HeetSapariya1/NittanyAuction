@@ -53,15 +53,15 @@
                 <input class="seller-input"
                        placeholder="Credit Card Number..."
                        value="{{ card['credit_card_num'] if card else '' }}"
-                       disabled>
+                       >
                 <input class="seller-input"
                        placeholder="Type..."
                        value="{{ card['card_type'] if card else '' }}"
-                       disabled>
+                       >
                 <input class="seller-input"
                        placeholder="Exp Date..."
                        value="{{ (card['expire_month']|string + '/' + card['expire_year']|string) if card else '' }}"
-                       disabled>
+                       >
             </div>
 
             <!-- Editable fields, name attribute is what Python reads -->
