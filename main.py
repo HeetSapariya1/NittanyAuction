@@ -78,50 +78,13 @@ def bidder_dashboard():
     if 'email' not in session or session.get('role') != 'bidder':
         return redirect(url_for("login"))
 
-    current_category = request.args.get("category", "Root")
-    keyword = request.args.get("q", "").strip()
     # load all categories from the database to populate the dropdown menu
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT category_name FROM Categories WHERE parent_category = ?",
-        (current_category,)
-    )
-    subcategories = [row[0] for row in cursor.fetchall()]
-
-    # If keyword is entered, search across all active listings
-    # Otherwise show products in the current category as before
-    if keyword:
-        cursor.execute("""
-                SELECT DISTINCT al.Seller_Email, al.Listing_ID, al.Auction_Title,
-                       al.Product_Name, al.Reserve_Price
-                FROM Auction_Listings al
-                LEFT JOIN Bidders b ON al.Seller_Email = b.email
-                WHERE al.Status = 1
-                AND (
-                    al.Auction_Title        LIKE ?
-                    OR al.Product_Name      LIKE ?
-                    OR al.Product_Description LIKE ?
-                    OR al.Category          LIKE ?
-                    OR b.first_name         LIKE ?
-                    OR b.last_name          LIKE ?
-                )
-            """, [f"%{keyword}%"] * 6)
-    elif current_category != "Root":
-        cursor.execute("""
-                SELECT Seller_Email, Listing_ID, Auction_Title,
-                       Product_Name, Reserve_Price
-                FROM Auction_Listings
-                WHERE Category = ? AND Status = 1
-            """, (current_category,))
-    else:
-        cursor.execute("SELECT 0 WHERE 0")  # empty — Root has no products
-
-    products = cursor.fetchall()
+    cursor.execute("SELECT category_name FROM Categories ORDER BY category_name")
+    categories = [{"category_name": row[0]} for row in cursor.fetchall()]
     conn.close()
-
-    return render_template("bidder.html",current_category=current_category,subcategories=subcategories,products=products,
-        keyword=keyword)
+    return render_template("bidder.html", categories=categories)
 
 
 @app.route("/profile/update", methods=["POST"])
