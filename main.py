@@ -214,6 +214,7 @@ def seller_dashboard():
     cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
 
+
     sql = """SELECT Listing_ID, Category, Auction_Title, Product_Name,
                     Product_Description, Premium_Item, Quantity, Reserve_Price, Max_Bids,
                     Remaining_Bids, Status, Removal_Reason
@@ -247,7 +248,7 @@ def seller_dashboard():
         seller_email=session['email'],
         premium_only=premium_only,
         status_filter=status_filter,
-        selected_category=selected_category,
+        selected_category=selected_category
     )
 
 
@@ -870,6 +871,48 @@ def update_seller_info():
             return redirect(url_for("login"))
 
         return render_template("Update-seller-info.html", seller=seller)
+
+@app.route("/submit-rating", methods=["POST"])
+def submit_rating():
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    bidder_email = session['email']
+    seller_email = request.form.get("seller_email")
+    listing_id = request.form.get("listing_id")
+    rating       = request.form.get("rating", 0, type=int)
+    rating_desc  = request.form.get("rating_desc", "").strip()
+
+    if rating == 0:
+        return redirect(url_for("bidder_dashboard"))
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+
+    # Verify bidder actually completed a transaction with this seller
+    cursor.execute("""
+        SELECT * FROM Transactions
+        WHERE Buyer_Email = ? AND Seller_Email = ? AND Listing_ID = ?
+    """, (bidder_email, seller_email, listing_id))
+
+    if not cursor.fetchone():
+        conn.close()
+        return redirect(url_for("bidder_dashboard"))
+
+    try:
+        cursor.execute("""
+            INSERT INTO Ratings (Bidder_Email, Seller_Email, Date, Rating, Rating_Desc)
+            VALUES (?, ?, date('now'), ?, ?)
+        """, (bidder_email, seller_email, rating, rating_desc or None))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        # Already rated this seller — silently ignore
+        pass
+
+    conn.close()
+    return redirect(url_for("bidder_dashboard"))
+
 
 if __name__ == "__main__":
     app.run(debug=True)
