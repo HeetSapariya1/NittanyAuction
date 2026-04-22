@@ -23,9 +23,12 @@
         >
           View My Bids
         </button>
-        <button class="top-btn"
-                onclick="window.location.href='{{ url_for('update_bidder_info') }}'"
-        >Profile</button>
+        <button
+          class="top-btn"
+          onclick="window.location.href='{{ url_for('update_bidder_info') }}'"
+        >
+          Profile
+        </button>
         <button class="icon-btn">
           <i class="fa-solid fa-bell"></i>
         </button>
@@ -48,23 +51,16 @@
 
         <div class="sidebar">
           <div class="sidebar-title">Categories</div>
-
-          {% if current_category != "Root" %}
-            <a class="category-btn" href="{{ url_for('bidder_dashboard') }}">← All Categories</a>
-            <div class="sidebar-title">In: {{ current_category }}</div>
-          {% endif %}
-
-          {% for sub in subcategories %}
-            <a class="category-btn"
-              href="{{ url_for('bidder_dashboard') }}?category={{ sub }}">
-              {{ sub }}
-            </a>
-          {% else %}
-            <div class="sidebar-empty">No subcategories</div>
-          {% endfor %}
+          <select name="category" class="seller-input">
+            <!-- category drop down -->
+            <option value="" disabled selected>Select Category...</option>
+            {% for c in categories %}
+            <option value="{{ c['category_name'] }}">
+              {{ c['category_name'] }}
+            </option>
+            {% endfor %}
+          </select>
         </div>
-
-
 
         <div class="dashboard-content">
           <input
@@ -74,20 +70,19 @@
           />
 
           <div class="product-grid">
-          {# Each row from the Auction_Listings query. Column order matches the
-            SELECT in the route: (Seller_Email, Listing_ID, Auction_Title,
-            Product_Name, Reserve_Price). #}
-          {% for p in products %}
+            {# Each row from the Auction_Listings query. Column order matches
+            the SELECT in the route: (Seller_Email, Listing_ID, Auction_Title,
+            Product_Name, Reserve_Price). #} {% for p in products %}
             <div class="product-card">
-              <strong>{{ p[2] }}</strong><br>       {# Auction_Title #}
-              {{ p[3] }}<br>                         {# Product_Name #}
-              Reserve: ${{ "%.2f"|format(p[4]) }}    {# Reserve_Price #}
+              <strong>{{ p[2] }}</strong><br />
+              {# Auction_Title #} {{ p[3] }}<br />
+              {# Product_Name #} Reserve: ${{ "%.2f"|format(p[4]) }} {#
+              Reserve_Price #}
             </div>
-          {% else %}
+            {% else %}
             <div class="product-card">No products in this category yet.</div>
-          {% endfor %}
-        </div>
-
+            {% endfor %}
+          </div>
 
           <div class="next-page-row">
             <span>Next Page ➡</span>

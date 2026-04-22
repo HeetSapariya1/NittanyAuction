@@ -32,21 +32,14 @@
 
             <div class="sidebar">
                 <div class="sidebar-title">Categories</div>
-
-                {% if current_category != "Root" %}
-                    <a class="category-btn" href="{{ url_for('seller_dashboard') }}">← All Categories</a>
-                    <div class="sidebar-title">In: {{ current_category }}</div>
-                {% endif %}
-
-                {% for sub in subcategories %}
-                    <a class="category-btn"
-                    href="{{ url_for('seller_dashboard') }}?category={{ sub }}">
-                    {{ sub }}
-                    </a>
-                {% else %}
-                    <div class="sidebar-empty">No subcategories</div>
-                {% endfor %}
-                </div>
+                <select name="category" class="seller-input">
+                    <!-- category drop down -->
+                    <option value="" disabled selected>Select Category...</option>
+                    {% for c in categories %}
+                        <option value="{{ c['category_name'] }}">{{ c['category_name'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
 
                 <div class="next-page-row">
