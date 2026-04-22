@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Auction Result</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="dashboard-header">
+      <h1>Auction Ended</h1>
+      <div class="header-buttons">
+        <button
+          class="top-btn"
+          onclick="window.location.href='{{ url_for('bidder_dashboard') }}'"
+        >
+          ← Home
+        </button>
+      </div>
+    </div>
+    <div class="dashboard-wrapper">
+      <div class="dashboard-main">
+        <div
+          class="dashboard-content"
+          style="max-width: 480px; margin: auto; padding-top: 40px"
+        >
+          <h2>{{ title }}</h2>
+          <p>Winning bid: <strong>${{ "%.2f"|format(winning_bid) }}</strong></p>
+
+          {% if reserve_met %} {% if is_winner %}
+          <div
+            style="
+              padding: 16px;
+              background: #d4edda;
+              color: #155724;
+              border-radius: 6px;
+            "
+          >
+            🎉 You won this auction!
+          </div>
+          <a
+            href="{{ url_for('payment', seller_email=seller_email, listing_id=listing_id) }}"
+          >
+            <button class="top-btn" style="margin-top: 12px">
+              Proceed to Payment →
+            </button>
+          </a>
+          {% else %}
+          <div
+            style="
+              padding: 16px;
+              background: #f8d7da;
+              color: #721c24;
+              border-radius: 6px;
+            "
+          >
+            This auction was won by another bidder.
+          </div>
+          {% endif %} {% else %}
+          <div
+            style="
+              padding: 16px;
+              background: #fff3cd;
+              color: #856404;
+              border-radius: 6px;
+            "
+          >
+            Auction ended but the reserve price was not met. No sale.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -121,12 +121,9 @@
               <strong>{{ p[2] }}</strong><br />
               {{ p[3] }}<br />
               Reserve: ${{ "%.2f"|format(p[4]) }}<br />
-              <form method="POST" action="{{ url_for('place_bid') }}" style="margin-top:8px;">
-                <input type="hidden" name="seller_email" value="{{ p[0] }}">
-                <input type="hidden" name="listing_id"   value="{{ p[1] }}">
-                <input type="number" step="0.01" name="bid_price" placeholder="Your bid" required style="width:90px;">
-                <button type="submit">Place Bid</button>
-              </form>
+              <a href="{{ url_for('auction_detail', seller_email=p[0], listing_id=p[1]) }}">
+                <button type="button" style="margin-top:8px;">View & Bid</button>
+              </a>
             </div>
             {% else %}
             <div class="product-card">No products in this category yet.</div>

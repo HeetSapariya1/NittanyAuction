@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{ listing[2] }} — NittanyAuction</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="dashboard-header">
+      <h1>Auction Detail</h1>
+      <div class="header-buttons">
+        <button
+          class="top-btn"
+          onclick="window.location.href='{{ url_for('bidder_dashboard') }}'"
+        >
+          ← Back
+        </button>
+        <button
+          class="top-btn"
+          style="background-color: #d9534f; color: white; border: none"
+          onclick="window.location.href='{{ url_for('logout') }}'"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+
+    <div class="dashboard-wrapper">
+      <div class="dashboard-main">
+        <div
+          class="dashboard-content"
+          style="max-width: 600px; margin: auto; padding-top: 40px"
+        >
+          {% if feedback %}
+          <div
+            style="padding:10px;margin-bottom:16px;border-radius:6px;
+                      background:{{ '#d4edda' if feedback_type == 'success' else '#f8d7da' }};
+                      color:{{ '#155724' if feedback_type == 'success' else '#721c24' }};"
+          >
+            {{ feedback }}
+          </div>
+          {% endif %}
+
+          <h2>{{ listing[2] }}</h2>
+          <p><strong>Product:</strong> {{ listing[3] }}</p>
+          <p><strong>Description:</strong> {{ listing[4] or "N/A" }}</p>
+          <p><strong>Category:</strong> {{ listing[9] }}</p>
+          <p>
+            <strong>Reserve Price:</strong> ${{ "%.2f"|format(listing[5]) }}
+          </p>
+          <p>
+            <strong>Current Highest Bid:</strong> ${{ "%.2f"|format(highest_bid)
+            }}
+          </p>
+          <p>
+            <strong>Bids Remaining:</strong> {{ listing[7] }} / {{ listing[6] }}
+          </p>
+
+          {% if listing[8] == 1 %} {% if last_bidder == current_user %}
+          <div
+            style="
+              padding: 10px;
+              background: #fff3cd;
+              color: #856404;
+              border-radius: 6px;
+              margin-bottom: 12px;
+            "
+          >
+            You placed the last bid. Wait for another bidder before bidding
+            again.
+          </div>
+          {% else %}
+          <form method="POST" action="{{ url_for('place_bid') }}">
+            <input type="hidden" name="seller_email" value="{{ listing[0] }}" />
+            <input type="hidden" name="listing_id" value="{{ listing[1] }}" />
+            <p>
+              <strong>Minimum bid:</strong> ${{ "%.2f"|format(highest_bid + 1.0)
+              }}
+            </p>
+            <input
+              type="number"
+              step="0.01"
+              name="bid_price"
+              placeholder="Your bid"
+              min="{{ highest_bid + 1.0 }}"
+              required
+              style="width: 160px"
+            />
+            <button type="submit">Place Bid</button>
+          </form>
+          {% endif %} {% else %}
+          <div
+            style="
+              padding: 10px;
+              background: #f8d7da;
+              color: #721c24;
+              border-radius: 6px;
+            "
+          >
+            This auction has ended.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

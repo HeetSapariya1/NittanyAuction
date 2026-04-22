@@ -534,6 +534,133 @@ def sell_product_dashboard():
 def temporary_dashboard():
     return render_template("temp-dashboard.html")
 
+@app.route("/auction-result/<seller_email>/<int:listing_id>")
+def auction_result(seller_email, listing_id):
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT Auction_Title, Reserve_Price FROM Auction_Listings
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    listing = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT Bidder_Email, Bid_Price FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+        ORDER BY Bid_Price DESC LIMIT 1
+    """, (seller_email, listing_id))
+    top = cursor.fetchone()
+    conn.close()
+
+    if not listing or not top:
+        return redirect(url_for("bidder_dashboard"))
+
+    winner_email = top[0]
+    winning_bid  = top[1]
+    reserve_met  = winning_bid >= listing[1]
+    is_winner    = (winner_email == session['email']) and reserve_met
+
+    return render_template("auction-result.html",
+        title=listing[0],
+        winning_bid=winning_bid,
+        reserve_met=reserve_met,
+        is_winner=is_winner,
+        seller_email=seller_email,
+        listing_id=listing_id
+    )
+
+@app.route("/auction/<seller_email>/<int:listing_id>")
+def auction_detail(seller_email, listing_id):
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT Seller_Email, Listing_ID, Auction_Title, Product_Name,
+               Product_Description, Reserve_Price, Max_Bids, Remaining_Bids, Status, Category
+        FROM Auction_Listings
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    listing = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT MAX(Bid_Price) FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    row = cursor.fetchone()
+    highest_bid = row[0] if row[0] is not None else 0.0
+
+    cursor.execute("""
+        SELECT Bidder_Email FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+        ORDER BY Bid_ID DESC LIMIT 1
+    """, (seller_email, listing_id))
+    last_row = cursor.fetchone()
+    last_bidder = last_row[0] if last_row else None
+
+    conn.close()
+
+    if listing is None:
+        return redirect(url_for("bidder_dashboard"))
+
+    feedback = request.args.get("feedback")
+    feedback_type = request.args.get("type", "error")
+
+    return render_template("auction-detail.html",
+        listing=listing,
+        highest_bid=highest_bid,
+        last_bidder=last_bidder,
+        feedback=feedback,
+        feedback_type=feedback_type,
+        current_user=session['email']
+    )
+
+@app.route("/payment/<seller_email>/<int:listing_id>", methods=["GET", "POST"])
+def payment(seller_email, listing_id):
+    if 'email' not in session or session.get('role') != 'bidder':
+        return redirect(url_for("login"))
+
+    bidder_email = session['email']
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT Auction_Title, Reserve_Price FROM Auction_Listings
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    listing = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT MAX(Bid_Price) FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ? AND Bidder_Email = ?
+    """, (seller_email, listing_id, bidder_email))
+    row = cursor.fetchone()
+    winning_bid = row[0] if row[0] else 0.0
+
+    cursor.execute("""
+        SELECT credit_card_num, card_type, expire_month, expire_year
+        FROM Credit_Cards WHERE Owner_email = ? LIMIT 1
+    """, (bidder_email,))
+    saved_card = cursor.fetchone()
+    conn.close()
+
+    if request.method == "POST":
+        pass  # payment logic coming soon
+
+    return render_template("payment.html",
+        listing=listing,
+        winning_bid=winning_bid,
+        saved_card=saved_card,
+        seller_email=seller_email,
+        listing_id=listing_id
+    )
+
 @app.route("/place-bid", methods=["POST"])
 def place_bid():
     if 'email' not in session or session.get('role') != 'bidder':
@@ -541,47 +668,84 @@ def place_bid():
 
     seller_email = request.form.get("seller_email", "").strip()
     listing_id   = request.form.get("listing_id", "").strip()
+    bidder_email = session['email']
+
     try:
         bid_price = float(request.form.get("bid_price", "").strip())
     except ValueError:
         return redirect(url_for("bidder_dashboard"))
 
+    def reject(msg):
+        return redirect(url_for("auction_detail",
+            seller_email=seller_email, listing_id=listing_id,
+            feedback=msg, type="error"))
+
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
-    cursor.execute(
-        """SELECT Status, Remaining_Bids
-           FROM Auction_Listings
-           WHERE Seller_Email = ? AND Listing_ID = ?""",
-        (seller_email, listing_id)
-    )
+
+    # Fetch listing
+    cursor.execute("""
+        SELECT Status, Remaining_Bids, Reserve_Price, Auction_Title
+        FROM Auction_Listings
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
     listing = cursor.fetchone()
+
     if listing is None or listing[0] != 1 or listing[1] <= 0:
         conn.close()
-        return redirect(url_for("bidder_dashboard"))
+        return reject("This auction is not active.")
 
+    # Current highest bid
+    cursor.execute("""
+        SELECT MAX(Bid_Price) FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (seller_email, listing_id))
+    row = cursor.fetchone()
+    highest_bid = row[0] if row[0] is not None else 0.0
+
+    # Rule 1: must be at least $1 higher
+    if bid_price < highest_bid + 1.0:
+        conn.close()
+        return reject(f"Bid too low. Minimum bid is ${highest_bid + 1.0:.2f}.")
+
+    # Rule 3: no consecutive bids
+    cursor.execute("""
+        SELECT Bidder_Email FROM Bids
+        WHERE Seller_Email = ? AND Listing_ID = ?
+        ORDER BY Bid_ID DESC LIMIT 1
+    """, (seller_email, listing_id))
+    last = cursor.fetchone()
+    if last and last[0] == bidder_email:
+        conn.close()
+        return reject("You placed the last bid. Wait for another bidder first.")
+
+    # All rules passed — insert bid
     cursor.execute(
-        "INSERT INTO Bids (Seller_Email, Listing_ID, Bidder_Email, Bid_Price) "
-        "VALUES (?, ?, ?, ?)",
-        (seller_email, listing_id, session['email'], bid_price)
+        "INSERT INTO Bids (Seller_Email, Listing_ID, Bidder_Email, Bid_Price) VALUES (?, ?, ?, ?)",
+        (seller_email, listing_id, bidder_email, bid_price)
     )
-    remaining_bids = listing[1] - 1
-    new_status = 2 if remaining_bids == 0 else 1
-    cursor.execute(
-        """UPDATE Auction_Listings
-           SET Remaining_Bids = ?, Status = ?, Removal_Reason = ?
-           WHERE Seller_Email = ? AND Listing_ID = ?""",
-        (
-            remaining_bids,
-            new_status,
-            "Listing automatically closed after max bids reached." if new_status == 2 else None,
-            seller_email,
-            listing_id,
-        )
-    )
+
+    remaining = listing[1] - 1
+    new_status = 2 if remaining == 0 else 1
+
+    cursor.execute("""
+        UPDATE Auction_Listings SET Remaining_Bids = ?, Status = ?
+        WHERE Seller_Email = ? AND Listing_ID = ?
+    """, (remaining, new_status, seller_email, listing_id))
+
     conn.commit()
     conn.close()
-    return redirect(url_for("my_bids_dashboard"))
+
+    # If auction just ended, go to result page
+    if new_status == 2:
+        return redirect(url_for("auction_result",
+            seller_email=seller_email, listing_id=listing_id))
+
+    # Otherwise back to detail page with success
+    return redirect(url_for("auction_detail",
+        seller_email=seller_email, listing_id=listing_id,
+        feedback="Bid placed!", type="success"))
 
 @app.route("/my-bids-dashboard")
 def my_bids_dashboard():
