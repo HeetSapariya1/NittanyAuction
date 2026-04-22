@@ -235,6 +235,26 @@ def register():
                            (email, hash_password(form.get("password", ""))))
 
             if role in ["Bidder", "Seller"]:
+                if form.get("zipcode"):
+                    cursor.execute("""
+                                   INSERT OR IGNORE INTO Zipcode_Info (zipcode,city,state_name)
+                                   VALUES (?, ?, ?)
+                                   """, (
+                                       form.get("zipcode"),
+                                       form.get("city"),
+                                       form.get("state"),
+                                   ))
+
+                    cursor.execute("""
+                                   INSERT INTO Address (address_id, zipcode, street_num, street_name)
+                                   VALUES (?, ?, ?, ?)
+                                   """, (
+                                       form.get("address_id"),
+                                       form.get("zipcode"),
+                                       form.get("street_num"),
+                                       form.get("street_name"),
+                                   ))
+
                 cursor.execute("""
                                INSERT INTO Bidders (email, first_name, last_name, age, major, home_address_id)
                                VALUES (?, ?, ?, ?, ?, ?)
@@ -244,8 +264,22 @@ def register():
                                    form.get("last_name"),
                                    form.get("age") or None,
                                    form.get("major"),
-                                   form.get("home_address_id") or None
+                                   form.get("address_id") if form.get("zipcode") else None
                                ))
+
+                if form.get("cc_number"):
+                    cursor.execute("""
+                                   INSERT INTO Credit_Cards (credit_card_num, card_type, expire_month, expire_year,
+                                                             security_code, Owner_email)
+                                   VALUES (?, ?, ?, ?, ?, ?)
+                                   """, (
+                                       form.get("cc_number"),
+                                       form.get("cc_type"),
+                                       form.get("cc_exp_month"),
+                                       form.get("cc_exp_year"),
+                                       form.get("cc_security_code"),
+                                       email
+                                   ))
 
             if role in ["Seller", "LocalVendor"]:
                 cursor.execute("""
@@ -254,6 +288,26 @@ def register():
                                """, (email, form.get("bank_routing_number"), form.get("bank_account_number")))
 
             if role == "LocalVendor":
+                if form.get("business_zipcode"):
+                    cursor.execute("""
+                                   INSERT OR IGNORE INTO Zipcode_Info (zipcode,city,state_name)
+                                   VALUES (?, ?, ?)
+                                   """, (
+                                       form.get("business_zipcode"),
+                                       form.get("business_city"),
+                                       form.get("business_state"),
+                                   ))
+
+                    cursor.execute("""
+                                   INSERT INTO Address (address_id, zipcode, street_num, street_name)
+                                   VALUES (?, ?, ?, ?)
+                                   """, (
+                                       form.get("business_address_id"),
+                                       form.get("business_zipcode"),
+                                       form.get("business_street_num"),
+                                       form.get("business_street_name"),
+                                   ))
+
                 cursor.execute("""
                                INSERT INTO Local_Vendors (email, business_name, business_address_id,
                                                           customer_service_phone_number)
@@ -261,26 +315,24 @@ def register():
                                """, (
                                    email,
                                    form.get("business_name"),
-                                   form.get("business_address_id") or None,
+                                   form.get("business_address_id") if form.get("business_zipcode") else None,
                                    form.get("customer_service_phone_number")
                                ))
 
     except sqlite3.IntegrityError:
-        # validity check
-        flash("Registration failed. Email already exists or Address ID is invalid.", "error")
+        flash("Registration failed. Email already exists or constraints have failed", "error")
         return redirect(url_for("register"))
 
-    # Log them in
     session['email'] = email
     session['role'] = "Seller" if role in ["Seller", "LocalVendor"] else "Bidder"
 
     flash("Registration successful! Welcome to Nittany Auction.", "success")
 
-    # redirect based on correct role
     if session['role'] == "Bidder":
         return redirect(url_for("bidder_dashboard"))
     else:
         return redirect(url_for("seller_dashboard"))
+
 
 @app.route("/sell-product-dashboard", methods=["GET", "POST"])
 def sell_product_dashboard():
