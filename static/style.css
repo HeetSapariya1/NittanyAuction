@@ -262,6 +262,19 @@ html, body {
     line-height: 1.4;
 }
 
+.member-badge {
+    margin: 0 0 18px 0;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f7d774 0%, #f0b93a 100%);
+    color: #4a3200;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    box-shadow: 0 10px 22px rgba(240, 185, 58, 0.22);
+}
+
 .sidebar-spacer {
     flex: 1;
     min-height: 24px;
@@ -375,6 +388,21 @@ html, body {
     margin-top: 16px;
 }
 
+.status-reason-input {
+    grid-column: 1 / -1;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    padding: 10px 12px;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.status-reason-input::placeholder {
+    color: rgba(255, 255, 255, 0.72);
+}
+
 .status-btn {
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 12px;
@@ -390,6 +418,88 @@ html, body {
 .status-btn:hover {
     background: rgba(255, 255, 255, 0.22);
     transform: translateY(-1px);
+}
+
+.delete-btn {
+    width: 100%;
+    margin-top: 10px;
+    border: none;
+    border-radius: 12px;
+    background: #c53d3d;
+    color: white;
+    padding: 12px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.delete-btn:hover,
+.delete-confirm-btn:hover {
+    background: #a92f2f;
+}
+
+.delete-modal {
+    width: min(420px, 92vw);
+    border: none;
+    border-radius: 18px;
+    padding: 18px 18px 20px 18px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+}
+
+.delete-modal::backdrop {
+    background: rgba(8, 18, 36, 0.55);
+}
+
+.delete-modal h3,
+.delete-modal p {
+    color: #183563;
+    margin: 0 0 12px 0;
+}
+
+.delete-modal-close-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 6px;
+}
+
+.delete-modal-close {
+    border: none;
+    background: transparent;
+    color: #183563;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.delete-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.delete-reason-input {
+    min-height: 110px;
+    border: 1px solid rgba(24, 53, 99, 0.2);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.delete-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.delete-confirm-btn {
+    border: none;
+    border-radius: 12px;
+    background: #c53d3d;
+    color: white;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
 }
 
 .next-page-row {

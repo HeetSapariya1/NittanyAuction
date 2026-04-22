@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS Zipcode_Info;
 DROP TABLE IF EXISTS Bids;
 DROP TABLE IF EXISTS Transactions;
 DROP TABLE IF EXISTS Auction_Listings;
+DROP TABLE IF EXISTS Listing_Removals;
 DROP TABLE IF EXISTS Categories;
 DROP TABLE IF EXISTS Credit_Cards;
 DROP TABLE IF EXISTS Ratings;
@@ -122,10 +123,22 @@ CREATE TABLE Auction_Listings (
     Quantity INTEGER DEFAULT 1,
     Reserve_Price REAL NOT NULL,
     Max_Bids INTEGER NOT NULL,
+    Remaining_Bids INTEGER NOT NULL CHECK (Remaining_Bids >= 0),
     Status INTEGER DEFAULT 1 CHECK (Status IN (0, 1, 2)), -- 0 not active , 1 active 2 sold
+    Removal_Reason TEXT,
     PRIMARY KEY (Seller_Email, Listing_ID), -- composite primary key to allow sellers to have multiple listings 
     FOREIGN KEY (Seller_Email) REFERENCES Sellers(email) ON DELETE CASCADE, -- deleting a seller removes the listing as well
     FOREIGN KEY (Category) REFERENCES Categories(category_name) -- ensures category exists in categories table when inserting a listing
+);
+
+CREATE TABLE Listing_Removals (
+    Removal_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Seller_Email TEXT NOT NULL,
+    Listing_ID INTEGER NOT NULL,
+    Auction_Title TEXT NOT NULL,
+    Removed_Status INTEGER NOT NULL,
+    Removal_Reason TEXT,
+    Removed_At TEXT NOT NULL
 );
 
 -- BIDS

@@ -60,6 +60,9 @@
 
         <div class="sidebar">
         <div class="sidebar-title">Categories</div>
+        {% if is_premium %}
+        <div class="member-badge">Premium Member</div>
+        {% endif %}
         <form method="GET" action="{{ url_for('bidder_dashboard') }}">
           {# keep the active search term when the user changes category #}
           <input type="hidden" name="q" value="{{ search_query or '' }}" />
@@ -77,17 +80,19 @@
           </select>
         </form>
         <div class="sidebar-spacer"></div>
-        {% if premium_only %}
-        <a class="category-btn premium-filter-btn"
-           href="{{ url_for('bidder_dashboard', category=selected_category or None, q=search_query or None) }}">
-          Show All Listings
-        </a>
-        <div class="sidebar-empty">Premium filter is on</div>
-        {% else %}
-        <a class="category-btn premium-filter-btn"
-           href="{{ url_for('bidder_dashboard', premium='1', category=selected_category or None, q=search_query or None) }}">
-          Premium Items Only
-        </a>
+        {% if is_premium %}
+          {% if premium_only %}
+          <a class="category-btn premium-filter-btn"
+             href="{{ url_for('bidder_dashboard', category=selected_category or None, q=search_query or None) }}">
+            Show All Listings
+          </a>
+          <div class="sidebar-empty">Premium filter is on</div>
+          {% else %}
+          <a class="category-btn premium-filter-btn"
+             href="{{ url_for('bidder_dashboard', premium='1', category=selected_category or None, q=search_query or None) }}">
+            Premium Items Only
+          </a>
+          {% endif %}
         {% endif %}
       </div>
 

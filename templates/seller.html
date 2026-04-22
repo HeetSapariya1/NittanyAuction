@@ -104,10 +104,11 @@
                             Quantity: {{ listing[6] }}<br>
                             Reserve: ${{ "%.2f"|format(listing[7]) }}<br>
                             Max Bids: {{ listing[8] }}<br>
+                            Remaining Bids: {{ listing[9] }}<br>
                             Status:
-                            {% if listing[9] == 0 %}
+                            {% if listing[10] == 0 %}
                                 <span class="listing-status status-inactive">Inactive</span>
-                            {% elif listing[9] == 1 %}
+                            {% elif listing[10] == 1 %}
                                 <span class="listing-status status-active">Active</span>
                             {% else %}
                                 <span class="listing-status status-sold">Sold</span>
@@ -121,6 +122,26 @@
                                 <button type="submit" name="status" value="0" class="status-btn">Set Inactive</button>
                                 <button type="submit" name="status" value="2" class="status-btn">Set Sold</button>
                             </form>
+                            <button type="button" class="delete-btn" onclick="document.getElementById('delete-modal-{{ listing[0] }}').showModal()">
+                                Delete Listing
+                            </button>
+                            <dialog id="delete-modal-{{ listing[0] }}" class="delete-modal">
+                                <form method="dialog" class="delete-modal-close-row">
+                                    <button class="delete-modal-close" type="submit">X</button>
+                                </form>
+                                <h3>Delete Listing</h3>
+                                <p>Why are you removing "{{ listing[2] }}"?</p>
+                                <form method="post" action="{{ url_for('delete_listing') }}" class="delete-form">
+                                    <input type="hidden" name="listing_id" value="{{ listing[0] }}">
+                                    <input type="hidden" name="premium" value="{% if premium_only %}1{% endif %}">
+                                    <input type="hidden" name="status_filter" value="{{ status_filter }}">
+                                    <input type="hidden" name="category_filter" value="{{ selected_category }}">
+                                    <textarea name="removal_reason" class="delete-reason-input" placeholder="Enter removal reason..." required></textarea>
+                                    <div class="delete-actions">
+                                        <button type="submit" class="delete-confirm-btn">Delete</button>
+                                    </div>
+                                </form>
+                            </dialog>
                         </div>
                     {% else %}
                         <div class="product-card">You have not created any listings yet.</div>

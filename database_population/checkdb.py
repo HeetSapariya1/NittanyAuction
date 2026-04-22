@@ -137,11 +137,14 @@ with open("dataset/Auction_Listings.csv", "r", encoding="utf-8-sig") as file:
                 Auction_Title,
                 Product_Name,
                 Product_Description,
+                Premium_Item,
                 Quantity,
                 Reserve_Price,
                 Max_Bids,
-                Status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                Remaining_Bids,
+                Status,
+                Removal_Reason
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             seller_email,
             listing_id,
@@ -149,10 +152,13 @@ with open("dataset/Auction_Listings.csv", "r", encoding="utf-8-sig") as file:
             auction_title,
             product_name,
             product_description,
+            0,
             quantity,
             reserve_price,
             max_bids,
-            status
+            max_bids,
+            status,
+            None
         ))
 
 conn.commit()

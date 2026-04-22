@@ -2,6 +2,7 @@ from flask import Flask, flash, render_template, request, redirect, url_for, ses
 import sqlite3
 import os
 import hashlib  # 1. Added the hashlib library
+from datetime import datetime, timezone
 
 app = Flask(__name__)
 app.secret_key = 'nittany_auction_secret'
@@ -90,6 +91,9 @@ def bidder_dashboard():
     row = cursor.fetchone()
     is_premium = row[0] == 1 if row else False
 
+    if not is_premium:
+        premium_only = False
+
     # Every category, flat, for the dropdown
     cursor.execute("SELECT category_name FROM Categories WHERE parent_category = 'Root' ORDER BY category_name")
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
@@ -127,7 +131,7 @@ def bidder_dashboard():
         selected_category=selected_category,
         search_query=search_query,
         premium_only=premium_only,
-        is_premium = is_premium
+        is_premium=is_premium
     )
 
 
@@ -211,7 +215,8 @@ def seller_dashboard():
     categories = [{"category_name": row[0]} for row in cursor.fetchall()]
 
     sql = """SELECT Listing_ID, Category, Auction_Title, Product_Name,
-                    Product_Description, Premium_Item, Quantity, Reserve_Price, Max_Bids, Status
+                    Product_Description, Premium_Item, Quantity, Reserve_Price, Max_Bids,
+                    Remaining_Bids, Status, Removal_Reason
              FROM Auction_Listings
              WHERE Seller_Email = ?"""
     params = [session['email']]
@@ -256,21 +261,89 @@ def update_listing_status():
     premium = request.form.get("premium", "").strip()
     status_filter = request.form.get("status_filter", "all").strip().lower()
     category_filter = request.form.get("category_filter", "").strip()
+    removal_reason = request.form.get("removal_reason", "").strip()
 
     status_map = {"0", "1", "2"}
     if not listing_id.isdigit() or new_status not in status_map:
         return redirect(url_for("seller_dashboard", premium=premium, status=status_filter, category=category_filter))
+
+    removal_reason_value = (removal_reason or None) if int(new_status) in (0, 2) else None
 
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute(
         """UPDATE Auction_Listings
-           SET Status = ?
+           SET Status = ?,
+               Removal_Reason = ?
            WHERE Seller_Email = ? AND Listing_ID = ?""",
-        (int(new_status), session['email'], int(listing_id))
+        (
+            int(new_status),
+            removal_reason_value,
+            session['email'],
+            int(listing_id),
+        )
     )
     conn.commit()
+    conn.close()
+
+    redirect_args = {}
+    if premium == "1":
+        redirect_args["premium"] = "1"
+    if status_filter and status_filter != "all":
+        redirect_args["status"] = status_filter
+    if category_filter:
+        redirect_args["category"] = category_filter
+    return redirect(url_for("seller_dashboard", **redirect_args))
+
+
+@app.route("/seller/delete-listing", methods=["POST"])
+def delete_listing():
+    if 'email' not in session or session.get('role') != 'seller':
+        return redirect(url_for("login"))
+
+    listing_id = request.form.get("listing_id", "").strip()
+    premium = request.form.get("premium", "").strip()
+    status_filter = request.form.get("status_filter", "all").strip().lower()
+    category_filter = request.form.get("category_filter", "").strip()
+    removal_reason = request.form.get("removal_reason", "").strip()
+
+    if not listing_id.isdigit():
+        return redirect(url_for("seller_dashboard"))
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT Auction_Title, Status
+           FROM Auction_Listings
+           WHERE Seller_Email = ? AND Listing_ID = ?""",
+        (session['email'], int(listing_id))
+    )
+    listing = cursor.fetchone()
+
+    if listing is not None:
+        cursor.execute(
+            """INSERT INTO Listing_Removals (
+                   Seller_Email, Listing_ID, Auction_Title, Removed_Status,
+                   Removal_Reason, Removed_At
+               ) VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                session['email'],
+                int(listing_id),
+                listing[0],
+                listing[1],
+                removal_reason or None,
+                datetime.now(timezone.utc).isoformat(),
+            )
+        )
+        cursor.execute(
+            """DELETE FROM Auction_Listings
+               WHERE Seller_Email = ? AND Listing_ID = ?""",
+            (session['email'], int(listing_id))
+        )
+        conn.commit()
+
     conn.close()
 
     redirect_args = {}
@@ -413,8 +486,8 @@ def sell_product_dashboard():
                 """INSERT INTO Auction_Listings (
                        Seller_Email, Listing_ID, Category, Auction_Title,
                        Product_Name, Product_Description, Premium_Item, Quantity,
-                       Reserve_Price, Max_Bids, Status, premium_item
-                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1,?)""",
+                       Reserve_Price, Max_Bids, Remaining_Bids, Status, Removal_Reason
+                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)""",
                 (
                     session['email'],
                     next_listing_id,
@@ -426,7 +499,8 @@ def sell_product_dashboard():
                     quantity,
                     reserve_price,
                     max_bids,
-                    premium_item
+                    max_bids,
+                    None,
                 )
             )
             conn.commit()
@@ -476,9 +550,34 @@ def place_bid():
     conn.execute("PRAGMA foreign_keys = ON")
     cursor = conn.cursor()
     cursor.execute(
+        """SELECT Status, Remaining_Bids
+           FROM Auction_Listings
+           WHERE Seller_Email = ? AND Listing_ID = ?""",
+        (seller_email, listing_id)
+    )
+    listing = cursor.fetchone()
+    if listing is None or listing[0] != 1 or listing[1] <= 0:
+        conn.close()
+        return redirect(url_for("bidder_dashboard"))
+
+    cursor.execute(
         "INSERT INTO Bids (Seller_Email, Listing_ID, Bidder_Email, Bid_Price) "
         "VALUES (?, ?, ?, ?)",
         (seller_email, listing_id, session['email'], bid_price)
+    )
+    remaining_bids = listing[1] - 1
+    new_status = 2 if remaining_bids == 0 else 1
+    cursor.execute(
+        """UPDATE Auction_Listings
+           SET Remaining_Bids = ?, Status = ?, Removal_Reason = ?
+           WHERE Seller_Email = ? AND Listing_ID = ?""",
+        (
+            remaining_bids,
+            new_status,
+            "Listing automatically closed after max bids reached." if new_status == 2 else None,
+            seller_email,
+            listing_id,
+        )
     )
     conn.commit()
     conn.close()
