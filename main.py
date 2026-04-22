@@ -176,6 +176,9 @@ def seller_dashboard():
         return redirect(url_for("login"))
 
     premium_only = request.args.get("premium") == "1"
+    status_filter = request.args.get("status", "all").strip().lower()
+    selected_category = request.args.get("category", "").strip()
+    status_map = {"inactive": 0, "active": 1, "sold": 2}
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -191,6 +194,16 @@ def seller_dashboard():
     if premium_only:
         sql += " AND Premium_Item = 1"
 
+    if selected_category:
+        sql += " AND Category = ?"
+        params.append(selected_category)
+
+    if status_filter in status_map:
+        sql += " AND Status = ?"
+        params.append(status_map[status_filter])
+    else:
+        status_filter = "all"
+
     sql += " ORDER BY Listing_ID DESC"
 
     cursor.execute(sql, params)
@@ -203,7 +216,46 @@ def seller_dashboard():
         seller_listings=seller_listings,
         seller_email=session['email'],
         premium_only=premium_only,
+        status_filter=status_filter,
+        selected_category=selected_category,
     )
+
+
+@app.route("/seller/listing-status", methods=["POST"])
+def update_listing_status():
+    if 'email' not in session or session.get('role') != 'seller':
+        return redirect(url_for("login"))
+
+    listing_id = request.form.get("listing_id", "").strip()
+    new_status = request.form.get("status", "").strip()
+    premium = request.form.get("premium", "").strip()
+    status_filter = request.form.get("status_filter", "all").strip().lower()
+    category_filter = request.form.get("category_filter", "").strip()
+
+    status_map = {"0", "1", "2"}
+    if not listing_id.isdigit() or new_status not in status_map:
+        return redirect(url_for("seller_dashboard", premium=premium, status=status_filter, category=category_filter))
+
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA foreign_keys = ON")
+    cursor = conn.cursor()
+    cursor.execute(
+        """UPDATE Auction_Listings
+           SET Status = ?
+           WHERE Seller_Email = ? AND Listing_ID = ?""",
+        (int(new_status), session['email'], int(listing_id))
+    )
+    conn.commit()
+    conn.close()
+
+    redirect_args = {}
+    if premium == "1":
+        redirect_args["premium"] = "1"
+    if status_filter and status_filter != "all":
+        redirect_args["status"] = status_filter
+    if category_filter:
+        redirect_args["category"] = category_filter
+    return redirect(url_for("seller_dashboard", **redirect_args))
 
 
 @app.route("/helpdesk")
