@@ -910,9 +910,9 @@ def submit_rating():
         VALUES (?, ?, ?, ?)
     """, (bidder, seller, listing, rating))
 
+
     conn.commit()
     conn.close()
-
     return redirect(url_for("bidder_dashboard"))
 
 if __name__ == "__main__":
